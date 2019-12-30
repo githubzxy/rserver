@@ -1,0 +1,148 @@
+/**
+ * 车间回复详情界面
+ * @author yangsy
+ * @date 19-3-7
+ */
+define('kmms/productionManage/circuitWorkOrderManage/circuitWorkOrderApply/circuitWorkOrderWorkshopReplyDetail',
+		[
+		 	'bui/common',
+		 	'bui/form',
+		 	'bui/select',
+			'bui/data',
+			'bui/calendar',
+			'common/form/FormContainer',
+			'common/org/OrganizationPicker',
+			'common/data/PostLoad',
+			'common/uploader/UpdateUploader',
+			'common/uploader/ViewUploader',
+		],function(r){
+    var BUI = r('bui/common'),Select = r('bui/select'),Data = r('bui/data'),
+    	  Calendar = r('bui/calendar'),
+    	  FormContainer= r('common/form/FormContainer'),
+    	  OrganizationPicker = r('common/org/OrganizationPicker'),
+    	  PostLoad = r('common/data/PostLoad'),
+    	  UpdateUploader = r('common/uploader/UpdateUploader'),
+    	  ViewUploader = r('common/uploader/ViewUploader');
+    var CircuitWorkOrderWorkshopReplyDetail = BUI.Overlay.Dialog.extend({
+        initializer : function(){
+            var _self = this;
+            _self.addChild(_self._initFormContainer());
+        },
+        renderUI:function(){
+			var _self=this;
+			$("#circuitWorkOrderWorkshopReplyDetail .bui-ext-close").css("display","none");
+			_self._getShowData();
+        },
+        bindUI : function(){
+            var _self = this;
+            
+            //定义按键
+            var buttons = [
+                 {
+                    text:'关闭',
+                    elCls : 'button',
+                    handler : function(){
+                    	var close = _self.get('close');
+                        if(close){
+                        	close.call(_self);
+                        }
+//                        if(this.onCancel() !== false){
+//                            this.close();
+//                        }
+                    }
+                }
+            ];
+            _self.set('buttons',buttons);
+        },
+        
+        
+        /**
+		 * 初始化上传文件（仅用于查看）
+		 */
+		_initViewUploader:function(uploadFiles){
+			var _self = this;
+			var viewFiles = new ViewUploader({
+				render: '#formContainer #viewUploadfile',
+				alreadyItems : uploadFiles,
+				previewOnline : true
+			});
+			viewFiles.render();
+		},
+
+        /**
+         * 获取显示数据
+         */
+        _getShowData : function(){
+            var _self = this,shiftId = _self.get('shiftId'),executiveOrgId = _self.get('executiveOrgId');
+            $.ajax({
+                url:'/kmms/circuitWorkOrderWorkshopReplyAction/findById',
+                data:{id : shiftId,executiveOrgId,executiveOrgId,collectionName : "circuitIssueWorkOrder"},
+                type:'post',
+                dataType:"json",
+                success:function(result){
+                    var data = result.data;
+                    if(data){
+                    	$("#formContainer #replyTime").val(data.replyTime);
+                        $("#formContainer #workshopReply").val(data.workshopReply);
+                    }
+                }
+            })
+        },
+		
+        /**
+         * 初始化FormContainer
+         */
+        _initFormContainer : function(){
+            var _self = this;
+            var colNum = 2;
+            var childs = [
+				{
+					label : '回复时间：',
+					itemColspan : 2,
+					item : '<input type="text" name="replyTime" id="replyTime" style="width:99.5%;" readonly/>'
+				},
+				{
+					label : '回复说明：',
+					itemColspan : 2,
+					item : '<textarea name="workshopReply" id="workshopReply" style="width:99.5%;height:220px" readonly/></textarea>'
+				},
+            ];
+            var form = new FormContainer({
+                id : 'circuitWorkOrderWorkshopReplyDetailForm',
+                colNum : colNum,
+                formChildrens : childs,
+//                elStyle:{overflowY:'scroll',height:'260px'}
+            });
+            _self.set('formContainer',form);
+            return form;
+        }
+    },{
+        ATTRS : {
+            id:{value : 'circuitWorkOrderWorkshopReplyDetailDialog'},
+            elAttrs:{value: {id:"circuitWorkOrderWorkshopReplyDetail"}},
+            title:{value:'车间回复详情'},
+            width:{value:450},
+            height:{value:360},
+            closeAction:{value:'destroy'},
+            mask:{value:true},
+            collectionName:{},
+            userId:{},
+            userName:{},
+            orgId:{},
+            orgName:{},
+            executiveOrgId:{},
+            shiftId:{},//用于查询单条数据
+            close:{
+	           	 value : function(){
+	           		 var _self = this;
+	           		 _self.fire("closeDialog",{
+	                        result : "close"
+	                    });
+	           	 }
+            },
+            rootOrgId:{value:'8affa073533aa3d601533bbef63e0010'},
+            rootOrgText:{value:'昆明通信段'},
+        }
+    });
+    return CircuitWorkOrderWorkshopReplyDetail;
+});

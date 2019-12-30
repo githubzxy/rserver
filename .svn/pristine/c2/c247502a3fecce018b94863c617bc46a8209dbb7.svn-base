@@ -1,0 +1,402 @@
+package com.enovell.yunwei.km_micor_service.service.integratedManage.attendanceManage;
+
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.util.CellRangeAddress;
+import org.apache.poi.ss.util.CellUtil;
+import org.apache.poi.xssf.usermodel.XSSFCell;
+import org.apache.poi.xssf.usermodel.XSSFRow;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.bson.Document;
+import org.bson.conversions.Bson;
+import org.bson.types.ObjectId;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+import com.enovell.yunwei.km_micor_service.dto.AttendanceSumDto;
+import com.enovell.yunwei.km_micor_service.util.ReadExcelAttendance;
+import com.mongodb.Block;
+import com.mongodb.MongoClient;
+import com.mongodb.client.FindIterable;
+import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.model.Filters;
+
+@Service("attendanceManageCollectQueryService")
+public class AttendanceManageCollectQueryServiceImpl implements AttendanceManageCollectQueryService {
+	 @Value("${spring.data.mongodb.host}")
+	 private String mongoHost;
+	 @Value("${spring.data.mongodb.port}")
+	 private int mongoPort;
+	 @Value("${spring.data.mongodb.database}")
+	 private String mongoDatabase;
+	 @Value("${attendanceModelPath}")
+	private String attendanceModelPath;
+	@Value("${createPath}")
+	private String createPath;
+
+	@Override
+	public Document findDatasById(String id, String collectionName) {
+		try(MongoClient mc = new MongoClient(mongoHost,mongoPort)){
+            MongoDatabase md = mc.getDatabase(mongoDatabase);
+            FindIterable<Document> findIterable = md.getCollection(collectionName).find(new Document("_id", new ObjectId(id)).append("status",1));
+            Document doc = findIterable.first();
+            doc.append("docId",doc.getObjectId("_id").toHexString());
+            doc.remove("_id");
+            return doc;
+        }
+	}
+
+	@Override
+	public Document updateCollectDocument(Document doc, String collectionName) {
+		try(MongoClient mc = new MongoClient(mongoHost,mongoPort)){
+			MongoDatabase md = mc.getDatabase(mongoDatabase);
+			return md.getCollection(collectionName)
+					.findOneAndUpdate(
+							Filters.eq("_id", new ObjectId(doc.getString("docId"))),new Document("$set",doc)
+							);
+		}
+	}
+
+	@Override
+	public long findAllDataCount(String attendanceManageCollect, String orgId, int orgType, String startUploadDate,String endUploadDate) {
+		try(MongoClient mc = new MongoClient(mongoHost,mongoPort)) {
+            MongoDatabase md = mc.getDatabase(mongoDatabase);
+            Bson filter = getDataFilter(orgId,orgType,startUploadDate,endUploadDate);
+            return  md.getCollection(attendanceManageCollect).count(filter);
+        }
+	}
+
+
+	@Override
+	public List<Document> findAllData(String attendanceManageCollect, String orgId, int orgType, String startUploadDate, String endUploadDate, int start, int limit) {
+		List<Document> results=new ArrayList<>();
+		try(MongoClient mc=new MongoClient(mongoHost,mongoPort)){
+			MongoDatabase md=mc.getDatabase(mongoDatabase);
+			Bson filter=getDataFilter(orgId,orgType,startUploadDate,endUploadDate);
+			FindIterable<Document> findIterable = md.getCollection(attendanceManageCollect).find(filter).skip(start).limit(limit).sort(new Document("createDate", -1));
+			findIterable.forEach((Block<? super Document>) results::add);
+			 results.stream().forEach(d-> {
+		            d.append("docId",d.getObjectId("_id").toHexString());
+		            d.remove("_id");
+		        });
+		}
+		return results;
+	}
+	
+	private Bson getDataFilter(String orgId, int orgType, String startUploadDate, String endUploadDate) {
+		Bson filters=Filters.eq("status",1);
+		filters=Filters.and(filters,Filters.in("flowState","1","-1"));
+		if(StringUtils.isNotBlank(startUploadDate)) {
+			filters=Filters.and(filters,Filters.gte("createTime",startUploadDate));
+		}
+		if(StringUtils.isNotBlank(endUploadDate)) {
+			filters=Filters.and(filters,Filters.lte("createTime",endUploadDate));
+		}
+		return filters;
+	}
+	
+	private List<Document> findAllDocumentByDateAndOrg(String attendanceManageSum,String date,String attendanceOrgName,String attendanceOrgId){
+		List<Document> results=new ArrayList<>();
+		try(MongoClient mc=new MongoClient(mongoHost,mongoPort)){
+			MongoDatabase md=mc.getDatabase(mongoDatabase);
+			Bson filters=Filters.eq("status",1);
+			if(StringUtils.isNotBlank(date)) {
+				filters=Filters.and(filters,Filters.eq("yearmonth",date));
+			}
+			if(StringUtils.isNotBlank(attendanceOrgId)) {
+				filters=Filters.and(filters,Filters.eq("orgId",attendanceOrgId));
+			}
+			FindIterable<Document> findIterable = md.getCollection(attendanceManageSum).find(filters).sort(new Document("createDate", -1));
+			findIterable.forEach((Block<? super Document>) results::add);
+			 results.stream().forEach(d-> {
+		            d.append("docId",d.getObjectId("_id").toHexString());
+		            d.remove("_id");
+			 });
+		}
+		return results;
+	}
+	
+	private Document addDocument(Document doc, String collectionName) {
+		 try(MongoClient mc = new MongoClient(mongoHost,mongoPort)){
+			 MongoDatabase md = mc.getDatabase(mongoDatabase);
+			 doc.append("status",1);
+			 md.getCollection(collectionName).insertOne(doc);
+        }
+        return doc;
+	}
+	
+	private void removeDocument(List<Document> listAll,String date,String attendanceOrgName, String attendanceOrgId, String collectionName) {
+		 try(MongoClient mc = new MongoClient(mongoHost, mongoPort)){
+			 Bson filters=Filters.eq("status",1);
+			 if(StringUtils.isNotBlank(date)) {
+				 filters=Filters.and(filters,Filters.eq("yearmonth",date));
+			 }
+			 if(StringUtils.isNotBlank(attendanceOrgId)) {
+				 filters=Filters.and(filters,Filters.eq("orgId",attendanceOrgId));
+			 }
+			 MongoDatabase md = mc.getDatabase(mongoDatabase);
+			 md.getCollection(collectionName).deleteMany(filters);
+		 }
+	}
+
+	@Override
+	public void importSumData(String filePath,String date,String attendanceOrgName, String attendanceOrgId) {
+		try {
+			
+			ReadExcelAttendance readExcel =new ReadExcelAttendance();
+	    	 
+			List<AttendanceSumDto> fdpList = readExcel.getExcelInfo(filePath,date,attendanceOrgName,attendanceOrgId);
+			 
+			List<Document> listAll = findAllDocumentByDateAndOrg("attendanceManageSum", date, attendanceOrgName , attendanceOrgId);
+			
+			removeDocument(listAll,date,attendanceOrgName,attendanceOrgId, "attendanceManageSum");
+	    	 
+			fdpList.stream().forEach(s->{
+				String collectionName ="attendanceManageSum";
+	    	    Document document = new Document();
+	    		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd ");
+	    		String createDateStr = "";
+	    		try {
+	    			createDateStr = sdf.format(new Date());
+	    		} catch (Exception e) {
+	    			e.printStackTrace();
+	    		}
+	    		document.put("createDate", new Date());
+	    		document.put("createDateStr", createDateStr);
+	    		document.put("yearmonth", s.getYearmonth());
+	    		document.put("orgName", s.getOrgName());
+	    		document.put("orgId", s.getOrgId());
+	    		document.put("number", s.getNumber());
+	    		document.put("peopleName", s.getPeopleName());
+	    		document.put("postName", s.getPostName());
+	    		document.put("xuexi", s.getXuexi());
+	    		document.put("gongchai", s.getGongchai());
+	    		document.put("yebanxiao", s.getYebanxiao());
+	    		document.put("yebanda", s.getYebanda());
+	    		document.put("riqin", s.getRiqin());
+	    		document.put("lunban", s.getLunban());
+	    		document.put("nianxiu", s.getNianxiu());
+	    		document.put("tanqin", s.getTanqin());
+	    		document.put("hunjia", s.getHunjia());
+	    		document.put("sangjia", s.getSangjia());
+	    		document.put("shijia", s.getShijia());
+	    		document.put("bingjia", s.getBingjia());
+	    		document.put("zhuyuan", s.getZhuyuan());
+	    		document.put("chanjia", s.getChanjia());
+	    		document.put("jisheng", s.getJisheng());
+	    		document.put("huli", s.getHuli());
+	    		document.put("xigong", s.getXigong());
+	    		document.put("kuanggong", s.getKuanggong());
+	    		document.put("total", s.getTotal());
+	    		addDocument(document, collectionName);
+	    	 });
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	@Override
+	public String collectTable(String year, String month, String attendanceManageSum) {
+		String title = "中国铁路昆明局集团有限公司昆明通信段"+year+month+"考勤统计表";
+		List<Document> results=new ArrayList<>();
+		try(MongoClient mc=new MongoClient(mongoHost,mongoPort)){
+			MongoDatabase md=mc.getDatabase(mongoDatabase);
+			Bson filters=Filters.eq("status",1);
+			filters=Filters.and(filters,Filters.eq("yearmonth",year+month));
+			FindIterable<Document> findIterable = md.getCollection(attendanceManageSum).find(filters).sort(new Document("createDate", -1));
+			findIterable.forEach((Block<? super Document>) results::add);
+			results.stream().forEach(d-> {
+		            d.append("docId",d.getObjectId("_id").toHexString());
+		            d.remove("_id");
+			});
+		}
+		return createTable(title,results);
+	}
+	
+	private String createTable(String title, List<Document> results){
+		String createTablePath = createPath + System.currentTimeMillis() + ".xlsx";
+		FileInputStream fis = null;
+		FileOutputStream fos = null;
+		XSSFWorkbook wb = null;
+		try{
+			fis = new FileInputStream(attendanceModelPath+"attendancehz.xlsx");
+			wb =  new XSSFWorkbook(fis);
+			XSSFSheet s = wb.getSheetAt(0);
+			fos = new FileOutputStream(createTablePath);
+			insertData(s, title, results);
+			wb.write(fos);
+		}catch(Exception e){
+			e.printStackTrace();
+		}finally{
+			try{
+				fis.close();
+				fos.close();
+				wb.close();
+			}catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+		return createTablePath;
+	}
+	
+	private void insertData(XSSFSheet s,String title, List<Document> results){
+		XSSFRow row0 = s.getRow(0);
+		XSSFCell cell0 = row0.getCell(0);//标题
+		cell0.setCellValue(String.valueOf(title));
+		insert(s, results);
+	}
+	
+	//检查数据字段是否存在
+    private String checkDataExist(String data){
+    	if(data=="null"){
+    		return "";
+    	}else{
+    		return data;
+    	}
+    }
+	
+	private void insert(XSSFSheet s, List<Document> results) {
+		int rows =results.size()-1;
+		int lastRowNum = s.getLastRowNum();
+		//将第8行以下的全部下移的行数
+		int shiftDownRow = lastRowNum+rows;
+		s.shiftRows(5, 6, shiftDownRow, true, false);
+		for(int i=0;i<rows;i++) {
+			XSSFRow sourceRow1=s.getRow(4+i);//从row5开始复制
+			XSSFRow targetRow1=s.createRow(5+i);//从row6开始粘贴
+			copyRow(sourceRow1, targetRow1);
+		}
+		int shiftUpRow = -lastRowNum;
+		s.shiftRows(5+lastRowNum+rows, 6+lastRowNum+rows, shiftUpRow, true, false);
+		for (int i = 0 ; i < results.size() ; i++) {
+			XSSFRow row = s.getRow(i+4);
+			XSSFCell cell0 = row.getCell(0);//序号
+			XSSFCell cell1 = row.getCell(1);//所属部门
+			XSSFCell cell2 = row.getCell(2);//劳资号
+			XSSFCell cell3 = row.getCell(3);//姓名
+			XSSFCell cell4 = row.getCell(4);//姓名
+			XSSFCell cell5 = row.getCell(5);//学习
+			XSSFCell cell6 = row.getCell(6);//公差
+			XSSFCell cell7 = row.getCell(7);//夜班（小）
+			XSSFCell cell8 = row.getCell(8);//夜班（大）
+			XSSFCell cell9 = row.getCell(9);//加班（日勤）
+			XSSFCell cell10 = row.getCell(10);//加班（轮班）
+			XSSFCell cell11 = row.getCell(11);//年休
+			XSSFCell cell12 = row.getCell(12);//探亲
+			XSSFCell cell13 = row.getCell(13);//婚假
+			XSSFCell cell14 = row.getCell(14);//丧假
+			XSSFCell cell15 = row.getCell(15);//事假
+			XSSFCell cell16 = row.getCell(16);//病假
+			XSSFCell cell17 = row.getCell(17);//住院
+			XSSFCell cell18 = row.getCell(18);//产假
+			XSSFCell cell19 = row.getCell(19);//计生
+			XSSFCell cell20 = row.getCell(20);//护理
+			XSSFCell cell21 = row.getCell(21);//息工
+			XSSFCell cell22 = row.getCell(22);//旷工
+			XSSFCell cell23 = row.getCell(23);//合计
+			cell0.setCellValue(String.valueOf(1+i));
+			cell1.setCellValue(String.valueOf(results.get(i).getString("orgName")));
+			cell2.setCellValue(String.valueOf(results.get(i).getString("number")));
+			cell3.setCellValue(String.valueOf(results.get(i).getString("peopleName")));
+			cell4.setCellValue(String.valueOf(results.get(i).getString("postName")));
+			cell5.setCellValue(checkDataExist(String.valueOf(results.get(i).getString("xuexi"))));
+			cell6.setCellValue(checkDataExist(String.valueOf(results.get(i).getString("gongchai"))));
+			cell7.setCellValue(checkDataExist(String.valueOf(results.get(i).getString("yebanxiao"))));
+			cell8.setCellValue(checkDataExist(String.valueOf(results.get(i).getString("yebanda"))));
+			cell9.setCellValue(checkDataExist(String.valueOf(results.get(i).getString("riqin"))));
+			cell10.setCellValue(checkDataExist(String.valueOf(results.get(i).getString("lunban"))));
+			cell11.setCellValue(checkDataExist(String.valueOf(results.get(i).getString("nianxiu"))));
+			cell12.setCellValue(checkDataExist(String.valueOf(results.get(i).getString("tanqin"))));
+			cell13.setCellValue(checkDataExist(String.valueOf(results.get(i).getString("hunjia"))));
+			cell14.setCellValue(checkDataExist(String.valueOf(results.get(i).getString("sangjia"))));
+			cell15.setCellValue(checkDataExist(String.valueOf(results.get(i).getString("shijia"))));
+			cell16.setCellValue(checkDataExist(String.valueOf(results.get(i).getString("bingjia"))));
+			cell17.setCellValue(checkDataExist(String.valueOf(results.get(i).getString("zhuyuan"))));
+			cell18.setCellValue(checkDataExist(String.valueOf(results.get(i).getString("chanjia"))));
+			cell19.setCellValue(checkDataExist(String.valueOf(results.get(i).getString("jisheng"))));
+			cell20.setCellValue(checkDataExist(String.valueOf(results.get(i).getString("huli"))));
+			cell21.setCellValue(checkDataExist(String.valueOf(results.get(i).getString("xigong"))));
+			cell22.setCellValue(checkDataExist(String.valueOf(results.get(i).getString("kuanggong"))));
+			cell23.setCellValue(checkDataExist(String.valueOf(results.get(i).getString("total"))));
+			
+		}
+	}
+	public static void copyRow(final XSSFRow sourceRow,final XSSFRow targetRow) {
+//		targetRow.setHeight(sourceRow.getHeight());//不设置行高（为了在单元格内填入数据时能根据内容多少自动调整行高）
+		IntStream.range(0, sourceRow.getPhysicalNumberOfCells()).forEach(i -> {
+			XSSFCell sourceCell = sourceRow.getCell(i);
+			if(sourceCell == null) return;
+			XSSFCell targetCell = targetRow.createCell(i);
+			copyCellStyleAndFont(sourceCell,targetCell);
+		});
+		copyMergeArea(sourceRow,targetRow);
+	}
+	
+	public static void copyCellStyleAndFont(XSSFCell sourceCell,XSSFCell targetCell) {
+		Map<String, Object> styleMap = getCopyStyle(sourceCell.getCellStyle());
+		CellUtil.setCellStyleProperties(targetCell, styleMap);
+		CellUtil.setFont(targetCell, sourceCell.getSheet().getWorkbook().getFontAt(sourceCell.getCellStyle().getFontIndex()));
+	}
+	
+	private static void copyMergeArea(XSSFRow sourceRow, XSSFRow targetRow) {
+		List<CellRangeAddress> sourceMerge = hasMergeArea(sourceRow);
+		if(CollectionUtils.isEmpty(sourceMerge)) return;
+		XSSFSheet sheet = targetRow.getSheet();
+		sourceMerge.stream().forEach(s -> {
+			sheet.addMergedRegion(new CellRangeAddress(
+					targetRow.getRowNum(), 
+					targetRow.getRowNum(), 
+					s.getFirstColumn(), 
+					s.getLastColumn()));
+		});
+	}
+	
+	private static List<CellRangeAddress> hasMergeArea(XSSFRow sourceRow) {
+		return sourceRow.getSheet().getMergedRegions().stream()
+		.filter(s -> 
+			s.getFirstRow() == sourceRow.getRowNum() &&
+			s.getLastRow() == sourceRow.getRowNum()
+		).collect(Collectors.toList());
+	}
+	
+	public static Map<String, Object> getCopyStyle(CellStyle cellStyle) {
+        if(cellStyle == null) {
+            return new HashMap<String, Object>();
+        }   
+        /*  
+         * 不使用“newCellStyle.cloneStyleFrom(cellStyle)”样式拷贝的原因：
+         * Office Excel 中弹出提示信息： 此文件中的某些文本格式可能已经更改，因为它已经超出最多允许字体数。关闭其他文档再试一次可能有用。文件错误。数据可能丢失。
+         * WPS Excel 正常
+         * 
+         * 解决方案：每个样式逐一拷贝
+         */
+        Map<String, Object> styleMap = new HashMap<String, Object>();
+        // 是否换行
+        styleMap.put(CellUtil.WRAP_TEXT, true);
+        // 单元格边框样式
+        styleMap.put(CellUtil.BORDER_BOTTOM, cellStyle.getBorderBottomEnum().getCode());
+        styleMap.put(CellUtil.BORDER_LEFT, cellStyle.getBorderLeftEnum().getCode());
+        styleMap.put(CellUtil.BORDER_RIGHT, cellStyle.getBorderRightEnum().getCode());
+        styleMap.put(CellUtil.BORDER_TOP, cellStyle.getBorderTopEnum().getCode());
+        // 单元格背景颜色
+        styleMap.put(CellUtil.FILL_PATTERN, cellStyle.getFillPatternEnum().getCode());
+        styleMap.put(CellUtil.FILL_FOREGROUND_COLOR, cellStyle.getFillForegroundColor());
+        // 单元格平水和垂直对齐方式                                                                                                                                          
+        styleMap.put(CellUtil.ALIGNMENT, cellStyle.getAlignmentEnum().getCode());
+        styleMap.put(CellUtil.VERTICAL_ALIGNMENT, cellStyle.getVerticalAlignmentEnum().getCode());
+        return styleMap;
+    }
+}

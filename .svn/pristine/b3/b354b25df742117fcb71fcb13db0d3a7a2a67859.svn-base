@@ -1,0 +1,66 @@
+server.port=7001
+server.tomcat.uri-encoding=UTF-8
+
+projectName=/kmms/
+
+spring.application.name=kmms
+#spring.datasource.username=kuntie_hutie_rinms2018
+#spring.datasource.password=kuntie_hutie_rinms2018
+spring.datasource.username=rinms2
+spring.datasource.password=rinms2
+#spring.datasource.url=jdbc:oracle:thin:@10.206.97.14:1521:orcl
+spring.datasource.url=jdbc:oracle:thin:@10.206.97.14:2333:orcl
+#spring.datasource.url=jdbc:oracle:thin:@172.23.1.4:2333:orcl
+spring.datasource.driver-class-name=oracle.jdbc.driver.OracleDriver
+
+spring.http.encoding.charset=UTF-8
+spring.http.encoding.enabled=true
+spring.http.encoding.force=true
+
+spring.thymeleaf.mode=HTML5
+spring.thymeleaf.encoding=UTF-8
+spring.thymeleaf.content-type=text/html
+spring.thymeleaf.cache=false
+
+spring.http.multipart.max-file-size=50MB
+spring.http.multipart.max-request-size=1024MB
+#spring.data.mongodb.uri=mongodb://localhost:27100/kmad
+spring.data.mongodb.host=10.206.97.14
+#spring.data.mongodb.host=172.23.1.4
+spring.data.mongodb.port=27000
+#spring.data.mongodb.database=kmad
+spring.data.mongodb.database=kmaddev
+
+
+#eureka.client.service-url.defaultZone=http://10.206.97.8:1111/eureka/
+eureka.client.service-url.defaultZone=http://localhost:1111/eureka/
+eureka.instance.preferIpAddress=true
+eureka.instance.instanceId=${spring.cloud.client.ipAddress}:${server.port}
+
+#user.uploadPath=/opt/extend/kunmingms/upload
+user.uploadPath=c:/upload
+
+#tablePath = /opt/extend/kunmingms/upload
+tablePath = d:/upload
+modelPath = ${tablePath}/temp/template1.xlsx
+#attendanceModelPath = ${tablePath}/temp/attendance1.xlsx
+attendanceModelPath = ${tablePath}/temp/
+createPath = ${tablePath}/
+wordPath = ${tablePath}/temp/
+
+pointOuterPath = ${tablePath}/temp/
+pointOuterDownloadPath = ${tablePath}/
+pointOuterFileDownloadPath = ${tablePath}/
+
+overhaulRecordPath = ${wordPath}
+overhaulRecordDownloadPath = ${tablePath}/
+overhaulRecordFileDownloadPath = ${tablePath}/
+
+#jobRecordUploadPath = /opt/extend/kunmingms/upload
+jobRecordUploadPath = d:/upload
+
+#attachFilePath
+#filePath=/opt/extend/kunmingms/upload
+#tempPath=${filePath}/temp
+filePath=c:/upload
+tempPath=${filePath}/temp

@@ -1,0 +1,342 @@
+package com.enovell.yunwei.km_micor_service.action.dayToJobManageAction;
+
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
+
+import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.poi.ss.usermodel.Workbook;
+import org.bson.Document;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.multipart.MultipartHttpServletRequest;
+
+import com.enovell.yunwei.km_micor_service.dto.GridDto;
+import com.enovell.yunwei.km_micor_service.dto.ResultMsg;
+import com.enovell.yunwei.km_micor_service.dto.dayToJobManageDto.ConstructRepairDto;
+import com.enovell.yunwei.km_micor_service.dto.dayToJobManageDto.ConstructRepairFindDto;
+import com.enovell.yunwei.km_micor_service.service.CommonPageService;
+import com.enovell.yunwei.km_micor_service.service.dayToJobManageService.ConstructRepairService;
+import com.enovell.yunwei.km_micor_service.util.JsonUtil;
+import com.enovell.yunwei.km_micor_service.util.OutFileUtil;
+import com.enovell.yunwei.km_micor_service.util.ReadCooperateExcel;
+import com.enovell.yunwei.km_micor_service.util.ReadExcel;
+import com.mongodb.DBObject;
+import com.mongodb.util.JSON;
+
+
+@RequestMapping("/constructRepairAction")
+@RestController
+public class ConstructRepairAction {
+	@Resource(name="constructRepairService")
+	private ConstructRepairService service;
+	@Resource(name = "commonPageService")
+    private CommonPageService comService;
+	
+	@PostMapping("/findAllDatas")
+	public GridDto<Document> findAllDatas(@RequestParam String collectionName,
+			String startUploadDate,
+			String endUploadDate,
+			String planNum,
+			String project,
+			String constructContent,
+			@RequestParam int start,
+			@RequestParam int limit,
+			@RequestParam String userId){
+		GridDto<Document> result=new GridDto<>();
+		SimpleDateFormat sdf=new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+		Date currentDate = new Date();
+        String currentDay = "";
+		currentDay = sdf.format(currentDate);
+		result.setResults(service.findAllDocumentCount(collectionName, startUploadDate, endUploadDate,planNum,project,currentDay,userId,constructContent));
+		result.setRows(service.quryAllDatas(collectionName, startUploadDate, endUploadDate,planNum,project, start, limit,currentDay,userId,constructContent));
+		return result;
+		
+	}
+	  @PostMapping("/addData")
+	    public ResultMsg addDoc(@RequestParam(name = "date",required=false) String date,
+	    						@RequestParam(name = "project",required=false) String project,
+	    						@RequestParam(name = "grade",required=false) String grade,
+	                            @RequestParam(name = "repairType",required=false) String repairType,
+	                            @RequestParam(name = "line",required=false) String line,
+	                            @RequestParam(name = "planNum",required=false) String planNum,
+	                            @RequestParam(name = "workShop",required=false) String workShop,
+	                            @RequestParam(name = "workArea",required=false) String workArea,
+	                            @RequestParam(name = "planAgreeTimeStart",required=false) String planAgreeTimeStart,
+	                            @RequestParam(name = "planAgreeTimeEnd",required=false) String planAgreeTimeEnd,
+	                            @RequestParam(name = "applyMinute",required=false) String applyMinute,
+	                            @RequestParam(name = "actAgreeTime",required=false) String actAgreeTime,
+	                            @RequestParam(name = "actOverTime",required=false) String actOverTime,
+	                            @RequestParam(name = "actMinute",required=false) String actMinute,
+	                            @RequestParam(name = "timeCash",required=false) String timeCash,
+	                            @RequestParam(name = "totalMan",required=false) String totalMan,
+	                            @RequestParam(name = "checkLeader",required=false) String checkLeader,
+	                            @RequestParam(name = "constructContent",required=false) String constructContent,
+	                            @RequestParam(name = "remark",required=false) String remark,
+	                            @RequestParam(name = "collectionName",required=false) String collectionName,
+	                            @RequestParam(name = "uploadfile",required = false)String uploadfile,
+	                            HttpServletRequest request) {
+
+	        Document document = new Document();
+			DBObject file =(DBObject) JSON.parse(uploadfile);
+	        document.put("uploadfile", file);
+	        document.put("date", date);
+	        document.put("project", project);
+	        document.put("grade", grade);
+	        document.put("repairType", repairType);
+	        document.put("line", line);
+	        document.put("planNum", planNum);
+	        document.put("workShop", workShop);
+	        document.put("workArea", workArea);
+	        document.put("planAgreeTimeStart", planAgreeTimeStart);
+	        document.put("planAgreeTimeEnd", planAgreeTimeEnd);
+	        document.put("planAgreeTime", planAgreeTimeStart+" - "+planAgreeTimeEnd);
+	        document.put("applyMinute", applyMinute);
+	        document.put("actAgreeTime", actAgreeTime);
+	        document.put("actOverTime", actOverTime);
+	        document.put("actMinute", actMinute);
+	        document.put("timeCash", timeCash);
+	        document.put("totalMan", totalMan);
+	        document.put("checkLeader", checkLeader);
+	        document.put("constructContent", constructContent);
+	        document.put("remark", remark);
+	        document.put("summaryDate", "");//汇总日期
+	        document.put("summaryPersonId", "");//汇总人ID
+	        document.put("summaryPersonName", "");//汇总人名称
+	        Document res = service.addDocument(document, collectionName);
+	        return ResultMsg.getSuccess("新增成功", res);
+	    }
+	  @PostMapping("/findById")
+		 public Document findById(String id,String collectionName){
+			 
+			 return service.findDatasById(id,collectionName);
+			 
+		 }
+	  @PostMapping("/updateDoc")
+	    public ResultMsg updateDoc(	@RequestParam("id") String id,
+						    		@RequestParam(name = "date",required=false) String date,
+									@RequestParam(name = "project",required=false) String project,
+									@RequestParam(name = "grade",required=false) String grade,
+					                @RequestParam(name = "repairType",required=false) String repairType,
+					                @RequestParam(name = "line",required=false) String line,
+					                @RequestParam(name = "planNum",required=false) String planNum,
+					                @RequestParam(name = "workShop",required=false) String workShop,
+					                @RequestParam(name = "workArea",required=false) String workArea,
+					                @RequestParam(name = "planAgreeTimeStart",required=false) String planAgreeTimeStart,
+					                @RequestParam(name = "planAgreeTimeEnd",required=false) String planAgreeTimeEnd,
+					                @RequestParam(name = "applyMinute",required=false) String applyMinute,
+					                @RequestParam(name = "actAgreeTime",required=false) String actAgreeTime,
+					                @RequestParam(name = "actOverTime",required=false) String actOverTime,
+					                @RequestParam(name = "actMinute",required=false) String actMinute,
+					                @RequestParam(name = "timeCash",required=false) String timeCash,
+					                @RequestParam(name = "totalMan",required=false) String totalMan,
+					                @RequestParam(name = "checkLeader",required=false) String checkLeader,
+					                @RequestParam(name = "constructContent",required=false) String constructContent,
+					                @RequestParam(name = "remark",required=false) String remark,
+					                @RequestParam(name = "collectionName",required=false) String collectionName,
+					                @RequestParam(name = "uploadfile") String uploadfile,
+	                               HttpServletRequest request) {
+	        Document document = service.findDatasById(id,collectionName);
+	        DBObject file =(DBObject) JSON.parse(uploadfile);
+	        document.put("uploadfile", file);
+	        document.put("date", date);
+	        document.put("project", project);
+	        document.put("grade", grade);
+	        document.put("repairType", repairType);
+	        document.put("line", line);
+	        document.put("planNum", planNum);
+	        document.put("workShop", workShop);
+	        document.put("workArea", workArea);
+	        document.put("planAgreeTimeStart", planAgreeTimeStart);
+	        document.put("planAgreeTimeEnd", planAgreeTimeEnd);
+	        document.put("planAgreeTime", planAgreeTimeStart+" - "+planAgreeTimeEnd);
+	        document.put("applyMinute", applyMinute);
+	        document.put("actAgreeTime", actAgreeTime);
+	        document.put("actOverTime", actOverTime);
+	        document.put("actMinute", actMinute);
+	        document.put("timeCash", timeCash);
+	        document.put("totalMan", totalMan);
+	        document.put("checkLeader", checkLeader);
+	        document.put("constructContent", constructContent);
+	        document.put("remark", remark);
+	        document.put("summaryDate", "");//汇总日期
+	        document.put("summaryPersonId", "");//汇总人ID
+	        document.put("summaryPersonName", "");//汇总人名称
+	        Document res = service.updateDocument(document, collectionName);
+	        return ResultMsg.getSuccess("修改成功", res);
+	    }
+	  
+	    @RequestMapping("/exportXls")
+		@ResponseBody
+		public String exportDataToExcel(@RequestParam("exportXlsJson") String exportXlsJson,
+				HttpServletRequest request, HttpServletResponse response){
+	    	ConstructRepairFindDto dto = JsonUtil.jsonToJavaObj(exportXlsJson, ConstructRepairFindDto.class);
+	    	SimpleDateFormat sdf=new SimpleDateFormat("yyyy-MM-dd");
+	    	SimpleDateFormat sdfYear=new SimpleDateFormat("yyyy");
+	    	String year = sdfYear.format(new Date());
+			Date currentDate = new Date();
+	        String currentDay = "";
+	        currentDay = sdf.format(currentDate);
+	        ResultMsg result=new ResultMsg();
+			try {
+				Workbook workbook = service.exportExcel(dto,currentDay);
+				OutFileUtil.outFile(year+"年度施工及停机要点完成情况统计表",workbook,request,response);
+				if(workbook==null){
+					return "0";//无数据
+				}else{
+					return "1";//导出成功
+				}
+				
+			} catch (IOException e) {
+				e.printStackTrace();
+				return "2";//失败
+			}
+			
+		}
+	    @RequestMapping("/exportQueryXls")
+			@ResponseBody
+			public String exportQueryDataToExcel(@RequestParam("exportQueryXlsJson") String exportQueryXlsJson,
+					HttpServletRequest request, HttpServletResponse response){
+		    	ConstructRepairFindDto dto = JsonUtil.jsonToJavaObj(exportQueryXlsJson, ConstructRepairFindDto.class);
+		    	SimpleDateFormat sdfYear=new SimpleDateFormat("yyyy");
+		    	String year = sdfYear.format(new Date());
+				try {
+					Workbook workbook = service.exportQueryExcel(dto);
+					OutFileUtil.outFile(year+"施工及停机要点完成表",workbook,request,response);
+					if(workbook==null){
+						return "0";//无数据
+					}else{
+						return "1";//导出成功
+					}
+					
+				} catch (IOException e) {
+					e.printStackTrace();
+					return "2";//失败
+				}
+				
+			}
+	    //导入施工维修Excel
+	    @RequestMapping("/wxImport")
+		 @ResponseBody
+			public ResultMsg wxImport(ConstructRepairDto dto,
+					 @RequestParam(name="file_excel",required=false) MultipartFile file,
+					 @RequestParam(name="userId",required=false) String userId,
+					 HttpServletRequest request,
+					 HttpServletResponse response
+					) throws IOException{
+	    	try {
+	    		 ReadExcel readExcel=new ReadExcel();
+		    	 List<ConstructRepairDto> crdList = null;
+		    	 crdList = readExcel.getExcelInfo(file);
+		    	 crdList.stream().forEach(s->{
+		    	 String collectionName ="constructRepair";
+		    	 String fileCols ="";
+		    	 Document document = new Document();
+		    	 Arrays.stream(fileCols.split(",")).forEach(f -> {
+			            List<Document> files = comService.uploadFile(((MultipartHttpServletRequest) request).getFiles(f));
+			            document.put("uploadfile", files);
+			        });
+		    	    document.put("date", s.getDate());
+			        document.put("grade", s.getGrade());
+			        document.put("repairType", s.getRepairType());
+			        document.put("line", s.getLine());
+			        document.put("planNum", s.getPlanNum());
+			        document.put("constructContent", s.getConstructContent());
+			        document.put("project","维修");
+			        document.put("applyMinute",s.getApplyMinute());
+			        document.put("planAgreeTimeStart",s.getPlanAgreeTimeStart());
+			        document.put("planAgreeTimeEnd",s.getPlanAgreeTimeEnd());
+			        document.put("planAgreeTime", s.getPlanAgreeTime());
+			        document.put("workShop", "");
+			        document.put("workArea", "");
+			        document.put("actAgreeTime", "");
+			        document.put("actOverTime", "");
+			        document.put("actMinute", "");
+			        document.put("timeCash", "");
+			        document.put("totalMan", "");
+			        document.put("checkLeader", "");
+			        document.put("remark", "");
+			        document.put("summaryDate", "");//汇总日期
+			        document.put("summaryPersonId", "");//汇总人ID
+			        document.put("summaryPersonName", "");//汇总人名称
+			        if(s.getDate()!=null&&s.getPlanAgreeTimeStart()!=null&&s.getPlanAgreeTimeEnd()!=null){
+			        Document res = service.addDocument(document, collectionName);
+		    	    }
+		    	 });
+		    	 response.sendRedirect("../kmms/dayToJobManage/constructRepair?userId="+userId);
+		    	 return null;
+			} catch (Exception e) {
+				 response.sendRedirect("../kmms/dayToJobManage/constructRepair?userId="+userId);
+		    	 return ResultMsg.getFailure("导入失败");
+			}
+	    		
+	    	}
+			
+	    //导入施工配合Excel
+	    @RequestMapping("/phImport")
+		 @ResponseBody
+			public ResultMsg phImport(ConstructRepairDto dto,
+					 @RequestParam(name="file_excel",required=false) MultipartFile file,
+					 @RequestParam(name="userId",required=false) String userId,
+					 HttpServletRequest request,
+					 HttpServletResponse response
+					) throws IOException{
+	    	try {
+	    		 ReadCooperateExcel readExcel=new ReadCooperateExcel();
+		    	 List<ConstructRepairDto> crdList = null;
+		    	 crdList = readExcel.getExcelInfo(file);
+		    	 crdList.stream().forEach(s->{
+		    	 String collectionName ="constructRepair";
+		    	 String fileCols ="";
+		    	 Document document = new Document();
+		    	 Arrays.stream(fileCols.split(",")).forEach(f -> {
+			            List<Document> files = comService.uploadFile(((MultipartHttpServletRequest) request).getFiles(f));
+			            document.put("uploadfile", files);
+			        });
+		    	 document.put("date", s.getDate());
+			        document.put("grade", s.getGrade());
+			        document.put("line", s.getLine());
+			        document.put("planNum", s.getPlanNum());
+			        document.put("constructContent", s.getConstructContent());
+			        document.put("project","施工");
+			        document.put("applyMinute",s.getApplyMinute());
+			        document.put("planAgreeTimeStart",s.getPlanAgreeTimeStart());
+			        document.put("planAgreeTimeEnd",s.getPlanAgreeTimeEnd());
+			        document.put("planAgreeTime", s.getPlanAgreeTime());
+			        document.put("repairType", "");
+			        document.put("workShop", "");
+			        document.put("workArea", "");
+			        document.put("actAgreeTime", "");
+			        document.put("actOverTime", "");
+			        document.put("actMinute", "");
+			        document.put("timeCash", "");
+			        document.put("totalMan", "");
+			        document.put("checkLeader", "");
+			        document.put("remark", "");
+			        document.put("summaryDate", "");//汇总日期
+			        document.put("summaryPersonId", "");//汇总人ID
+			        document.put("summaryPersonName", "");//汇总人名称
+			        if(s.getDate()!=null&&s.getPlanAgreeTimeStart()!=null&&s.getPlanAgreeTimeEnd()!=null){
+			        Document res = service.addDocument(document, collectionName);
+			        }
+		    	 });
+		    	 response.sendRedirect("../kmms/dayToJobManage/constructRepair?userId="+userId);
+		    	 return null;
+		    	 }
+			     catch (Exception e) {
+			     response.sendRedirect("../kmms/dayToJobManage/constructRepair?userId="+userId);
+		    	 return ResultMsg.getFailure("导入失败");
+		    	 }
+	}
+}
+			
+

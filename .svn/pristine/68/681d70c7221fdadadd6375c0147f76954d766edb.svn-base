@@ -1,0 +1,38 @@
+package com.enovell.yunwei.km_micor_service.service.securityManage.securityQuery;
+
+import java.time.LocalDate;
+
+import org.bson.Document;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
+import org.springframework.stereotype.Service;
+
+@Service("dayNumService")
+public class DayNumServiceImpl implements DayNumService{
+	 @Autowired
+	 private MongoTemplate mt;
+	@Override
+	public Document findNum(String collectionName) {
+		String id ="5d809046d792895ccc6c639e";
+		Document doc = mt.findOne(new Query(Criteria.where("_id").is(id)), Document.class, collectionName);
+		doc.append("docId", doc.getObjectId("_id").toHexString());
+        doc.remove("_id");
+		return doc;
+	}
+
+	@Override
+	public Document updateNum(String dayNum, String collectionName) {
+		String id ="5d809046d792895ccc6c639e";
+		Document document = this.findNum(collectionName);
+		Query query = new Query(Criteria.where("_id").is(id));
+		Update update = new Update();
+        update.set("updateDate", LocalDate.now());
+        update.set("dayNum", dayNum);
+		mt.updateFirst(query, update, collectionName);
+		return document;
+	}
+
+}

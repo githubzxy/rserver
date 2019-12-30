@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8"/>
+<title>PageOffice加载Office打开页面</title>
+</head>
+<body >
+<div id="firstDiv" style="text-align:center;margin:0 auto;">
+	<h2>请稍等,数据正在加载中...</h2>
+</div>
+<script type="text/javascript">
+  var div = document.getElementById("firstDiv");
+  var height =window.innerHeight-50;
+  var style="text-align:center;margin:0 auto;height:preheightpx;line-height:preheightpx";
+  var newstylr=style.replace(/preheightpx/g,height+'px');
+  div.getAttributeNode("style").value=newstylr;
+</script>
+</body>
+</html>

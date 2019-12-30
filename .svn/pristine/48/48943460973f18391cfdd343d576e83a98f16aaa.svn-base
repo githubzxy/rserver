@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8"/>
+<title>普铁年月报表-工区执行界面</title>
+<link rel="stylesheet" th:href="@{/bui/css/bs3/dpl.css}" />
+<link rel="stylesheet" th:href="@{/bui/css/bs3/bui.css}" />
+<script charset="utf-8" th:src="@{/common/sq.js}"></script>
+</head>
+<body>
+<script th:inline="javascript">
+	seajs.config({
+		paths : {
+			common : "/common",
+			yearMonthPlan : "/kmms/yearMonthPlan",
+			bui : "/bui"
+		}
+	})
+	seajs.use('yearMonthPlan/yearMonthPuTie/execute/WorkAreaPuTieYearMonthExecute',function(WorkAreaPuTieYearMonthExecute){
+		var workAreaPuTieYearMonthExecute = new WorkAreaPuTieYearMonthExecute({
+			filePath : [[${filePath}]],
+			user : [[${user}]],
+		});
+		workAreaPuTieYearMonthExecute.render();
+	})
+</script>
+</body>
+</html>

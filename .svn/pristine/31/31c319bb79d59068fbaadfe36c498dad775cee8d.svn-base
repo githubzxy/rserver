@@ -1,0 +1,25 @@
+/*日期面板样式*/
+.bui-calendar{
+	width: auto !important;
+	height: auto !important;
+	margin:0 left;/*居中*/
+	background-color: #c5eae7;
+}
+/*面板内日期区域填充满*/
+.x-datepicker-inner{
+	width: 100%;
+	height: 100%;
+}
+/*面板内日期数字（天）区域占高度比例*/
+.bui-calendar-panel{
+	height: 90%;
+}
+/*面板内日期数字的高度及大小*/
+.x-datepicker-date a{
+	line-height: 60px;
+	font-size: 24px;
+}
+/*每一天单元格的边框*/
+.x-datepicker-inner td{
+	border:1px solid #000;
+}

@@ -1,0 +1,5 @@
+.tableLayout  tr th {
+ 	background-color: #EFF3FF;
+ 	text-align: center;
+ 	width: 30%;
+}

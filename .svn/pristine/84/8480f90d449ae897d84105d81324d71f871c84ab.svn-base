@@ -1,0 +1,297 @@
+/**
+ * 故障查询主页
+ * @author yangsy
+ * @date 19-2-27
+ * 修改：在该页面增加对安全隐患的查看
+ * 修改人：zhouxingyu
+ * @date 19-3-24
+ */
+define('kmms/securityManage/troubleQuery/troubleQueryPage',
+	[
+	 	'bui/common',
+	 	'bui/data',
+	 	'bui/grid',
+	 	'bui/calendar',
+	 	'common/data/PostLoad',
+	 	'common/org/OrganizationPicker',
+	 	'common/grid/SearchGridContainer',
+	 	'kmms/securityManage/accidentTroubleObstacleManage/accidentTroubleObstacleQuery/accidentTroubleObstacleQueryDetailGz',
+	],function (r) {
+    var BUI = r('bui/common'),
+    	  Data = r('bui/data'),
+          Grid = r('bui/grid'),
+          Calendar = r('bui/calendar'),
+          PostLoad = r('common/data/PostLoad'),
+          OrganizationPicker = r('common/org/OrganizationPicker'),
+          SearchGridContainer = r('common/grid/SearchGridContainer'),
+          accidentTroubleObstacleQueryDetailGz = r('kmms/securityManage/accidentTroubleObstacleManage/accidentTroubleObstacleQuery/accidentTroubleObstacleQueryDetailGz');
+    var AccidentTroubleObstacleQueryPage = BUI.Component.Controller.extend(
+        {
+            initializer : function(){
+                var _self = this;
+                _self.addChild(_self._initSearchGridContainer());
+            },
+            renderUI:function(){
+                var _self=this;
+                _self._initDate();
+             	_self._getLines();//获取线名下拉选数据
+             	_self._getWorkShop();//获取车间下拉选数据
+//                _self._initOrganizationPicker();
+            },
+            bindUI:function(){
+                var _self = this,store = _self.get('store');
+//                var orgPicker=_self.get('orgPicker');
+                var table = _self.getChild(SearchGridContainer.SEARCH_GRID_ID,true);
+                var tbar = table.get('tbar');
+                /**
+                 * 组织机构选择
+                 */
+                
+                //重写重置按钮的点击事件
+    			$("button[type='reset']").on('click',function(event){
+    				event.preventDefault();
+    				$("#startUploadDateSearch").val("");
+    				$("#endUploadDateSearch").val("");
+    				$("#troubleObligationDepart").val("");
+    				$("#troubleLineName").val("");
+    				$("#troubleSite").val("");
+    				$("#troubleGeneral").val("");
+    			});
+
+                /**
+                 * 操作按钮
+                 */
+                table.on('cellclick',function(ev){
+                    var record = ev.record, //点击行的记录
+                    	  target = $(ev.domTarget),
+                    	  docId = record.docId; //点击的元素（数据库主键的值String）
+                    	  busiId = record.busiId;//自定义的业务ID
+                    	  troubleDate = record.troubleDate;
+                    	  orgName = record.obligationDepart
+                    	  
+                    	  var Day1 = troubleDate;
+                    	  var Day2 = _self._replacepos(Day1,4,4,'年');
+                    	  var Day3 = _self._replacepos(Day2,7,7,'月');
+                    	  Day3 = Day3.substring(0,10);
+
+                    /**
+                     * 带有故障的详情
+                     */
+                    if(target.hasClass('detailBtnGz')){
+                    	var infoDialog = new accidentTroubleObstacleQueryDetailGz({
+                    		collectionName:_self.get('collectionName'),
+                    		shiftId:docId
+                    	});
+                    	infoDialog.show();
+                    }
+                    if(target.hasClass('exportBtn')){
+                    	$.ajax({
+            				url:'/kmms/troubleQueryAction/exportFrom',
+                      		data:{id : docId,collectionName:_self.get('collectionName')},
+                      		type:'post',
+                      		dataType:"json",
+//                      		async:false,
+                      		success:function(res){
+                      			window.location.href = "/kmms/commonAction/download?path=" + res.msg+'&fileName='+Day3+"日"+orgName+"故障表.xls";
+                      		}
+            			});
+                      }
+                });
+            },
+            
+            _replacepos:function(text,start,stop,replacetext){
+            	var mystr = text.substring(0,stop)+replacetext+text.substring(stop+1);
+            	return mystr;
+            },
+            
+            /**
+             * 初始化上查询下列表
+             * @private
+             */
+            _initSearchGridContainer:function(){
+                var _self = this;
+                var searchGridContainer = new SearchGridContainer({
+                    searchForm : _self._initSearchForm(),
+                    columns : _self._initColumns(),
+                    store : _self._initStore(),
+                    searchGrid : _self._initSearchGrid()
+                });
+                return searchGridContainer;
+            },
+         
+    	    /**
+             * 获取线别
+             */
+            _getLines:function(){
+            	var _self=this;
+           	 $.ajax({
+    	                url:'/kmms/networkManageInfoAction/getLines',
+    	                type:'post',
+    	                dataType:"json",
+    	                success:function(res){
+    	               	 $("#troubleLineName").append("<option  value=''>请选择</option>");
+    	               	 for(var i=0;i<res.length;i++){
+    	               		 $("#troubleLineName").append("<option  value="+res[i]+">"+res[i]+"</option>");
+    	               	 }
+                    }
+                });
+            },
+            /**
+             * 获取车间下拉选数据
+             */
+            _getWorkShop:function(){
+            	 var _self = this;
+                 $.ajax({
+                     url:'/kmms/networkManageInfoAction/getWorkShop',
+                     type:'post',
+                     dataType:"json",
+                     success:function(res){
+                    	 $("#troubleObligationDepart").append("<option  value=''>请选择</option>");
+                    	 for(var i=0;i<res.length;i++){
+                    		 $("#troubleObligationDepart").append("<option  value="+res[i].orgName+">"+res[i].orgName+"</option>");
+                    	 }
+                     }
+                 })
+            }, 
+            /**
+             * 初始化查询表单
+             * @private
+             */
+            _initSearchForm:function(){
+                return {
+                    items : [
+                        {label : '开始时间',item : '<input type="text" name="startUploadDate" id="startUploadDateSearch" class="calendar" style="width: 175px;" readonly/>'},
+                        {label : '结束时间',item : '<input type="text" name="endUploadDate" id="endUploadDateSearch" class="calendar" style="width: 175px;" readonly/>'},
+                        {label : '责任部门',item : '<select name="troubleObligationDepart" id="troubleObligationDepart" style="width: 210px;" ></select>'},
+                        {label : '线别',item : '<select name="troubleLineName" id="troubleLineName" style="width: 210px;" ></select>'},
+                        {label : '故障地点',item : '<input type="text" name="troubleSite" id="troubleSite" style="width: 175px;" />'},
+                        {label : '故障概况',item : '<input type="text" name="troubleGeneral" id="troubleGeneral" style="width: 175px;" />'}
+                    ]};
+            },
+            /**
+             * 初始化时间查询
+             * @private
+             */
+            _initDate: function () {
+                var _self = this;
+                var startUploadDate = new Calendar.DatePicker({//加载日历控件
+                    trigger: '#startUploadDateSearch',
+                    showTime: true,
+                    autoRender: true,
+                    textField:'#startUploadDateSearch'
+                });
+                var endUploadDate = new Calendar.DatePicker({//加载日历控件
+                    trigger: '#endUploadDateSearch',
+                    showTime: true,
+                    autoRender: true,
+                    textField:'#endUploadDateSearch'
+                });
+                _self.set('startUploadDate', startUploadDate);
+                _self.set('endUploadDate', endUploadDate);
+            },
+            /**
+             * 初始化列表字段
+             * @private
+             */
+            _initColumns:function () {
+                var columns = [
+                    {
+                        title:'日期',
+                        dataIndex:'troubleDate',
+                        elCls : 'center',
+                        width:'20%',
+                        renderer:Grid.Format.datetimeRenderer
+                    },{
+                        title:'责任部门',
+                        dataIndex:'troubleObligationDepart',
+                        elCls : 'center',
+                        width:'20%'
+                    },{
+                        title:'线别',
+                        dataIndex:'troubleLineName',
+                        elCls : 'center',
+                        width:'15%',
+                    },{
+                        title:'故障地点',
+                        dataIndex:'troubleSite',
+                        elCls : 'center',
+                        width:'15%',
+                    },
+                    {
+                        title:'故障概况',
+                        dataIndex:'troubleGeneral',
+                        elCls : 'center',
+                        width:'25%',
+                    }, {
+                        title:'定性定责',
+                        dataIndex:'troubleFixDuty',
+                        elCls : 'center',
+                        width:'25%',
+                    },{
+                        title:'操作',
+                        dataIndex:'infoResult',
+                        elCls : 'center',
+                        width:'15%',
+                        renderer:function (value) {
+                            var button = '';
+                        	button = '<span  class="grid-command detailBtnGz">详情</span>'+
+                        	         '<span  class="grid-command exportBtn">导出</span>';
+                            return button;
+                        }
+                    }
+                ];
+                return columns;
+            },
+            /**
+             * 初始化列表数据对象
+             * @private
+             */
+            _initStore:function () {
+                var _self = this;
+                var store = new Data.Store({
+                    url : "/kmms/troubleQueryAction/findAll.cn",
+                    autoLoad : true ,
+                    pageSize : 20,
+                    proxy : {
+                        method : 'post',
+                        dataType : 'json'
+                    },
+                    params : {collectionName:_self.get('collectionName')}
+                });
+                _self.set('store',store);
+                return store;
+            },
+            
+            
+            /**
+             * 初始化列表展示对象
+             * @private
+             */
+            _initSearchGrid:function () {
+            	var _self = this;
+                var searchGrid = {
+				   tbarItems : [
+				   			   ],
+                    plugins : [
+                        Grid.Plugins.CheckSelection,
+                        Grid.Plugins.RowNumber
+                    ],
+//                    permissionStore : _self._initPermissionStore()
+                };
+                return searchGrid;
+            }
+        },
+        {
+            ATTRS : {
+                perId : {},
+                userId : {},//登录用户ID
+                userName : {},//登录用户名称
+                orgId : {},//登录用户组织机构ID
+                orgName : {},//登录用户组织机构名称
+                rootOrgId:{value:'8affa073533aa3d601533bbef63e0010'},
+                rootOrgText:{value:'昆明通信段'},
+                collectionName : {value:'informationData'}//存储表名
+            }
+        });
+    return AccidentTroubleObstacleQueryPage;
+});

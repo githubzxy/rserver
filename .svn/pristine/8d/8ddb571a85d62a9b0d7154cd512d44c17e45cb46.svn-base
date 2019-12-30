@@ -1,0 +1,229 @@
+package com.enovell.yunwei.km_micor_service.service.yearMonthPlan;
+
+import java.util.List;
+import java.util.Map;
+
+import com.enovell.system.common.domain.User;
+import com.enovell.yunwei.km_micor_service.dto.GridDto;
+import com.enovell.yunwei.km_micor_service.dto.ResultMsg;
+import com.enovell.yunwei.km_micor_service.dto.yearMonthPlan.domain.YearMonthPutieGQ;
+import com.enovell.yunwei.km_micor_service.dto.yearMonthPlan.dto.AttachShowDto;
+import com.enovell.yunwei.km_micor_service.dto.yearMonthPlan.dto.YearMonthWorkAreaDto;
+
+public interface YearMonthPutieGQService {
+
+	/**
+	 * 新增年月报表
+	* addReport 
+	* @param name 年月报表名称
+	* @param year 年份
+	* @param user 用户
+	* @return ResultMsg
+	 */
+	public ResultMsg addReport(String name,String year,User user);
+	
+	/**
+	 * 分页查询数据
+	* queryAllData 
+	* @param dto
+	* @param start
+	* @param limit
+	* @return
+	* GridDto<YearMonthPutieGQ>
+	* @author luoyan
+	 */
+	public GridDto<YearMonthPutieGQ> queryAllData(YearMonthWorkAreaDto dto, int start,int limit,User user);
+	
+	/**
+	 * 根据id和附表路径字段找到相应附表路径
+	* getAttachPath 
+	* @param id
+	* @param attachType 附表类型
+	* @return
+	* String
+	* @author luoyan
+	 */
+	public String getAttachPath(String id,String attachType);
+	
+	/**
+	 * 根据id查询所有数据
+	* queryAllData 
+	* @param id 工区业务id
+	* @return
+	* List<Map<String, Object>>
+	* @author gaohg
+	 */
+	public List<Map<String, Object>> queryAllDataById(String id);
+	
+	/**
+	 * 根据id修改年月表
+	* updateReport 
+	* @param id 年月表id
+	* @param name 年月表名称
+	* @param year 年份
+	* @throws Exception
+	* @return int
+	* @author gaohg
+	 */
+	public ResultMsg updateReportById(String id,String name,String year, User user);
+	
+	/**
+	* 根据id批量删除年月表
+	* deleteReports
+	* @param ids 年月表id
+	* @return int
+	 */
+	public int deleteReports(String ids);
+	
+	/**
+	 * 工区上报到车间
+	* reportToWorkShop 
+	* @param id 
+	* @param year 年份
+	* @param user 当期登录用户
+	* @author luoyan
+	 */
+	public void reportToWorkShop(String id,String year,User user);
+	
+	/**
+	 * 
+	 * updateWorkShopStatus 根据工区数据id来检查该工区所属车间下的所有工区数据的状态,
+	 * 如果所有状态都保持一致，则将该车间的状态也修改为此状态，如果不一样，则不修改
+	 * @author quyy
+	 * @param ids 工区数据id集合
+	 * @param status 工区数据的状态
+	 * @return
+	 */
+	public boolean updateWorkShopStatus(List<String> ids,String status);
+	
+	
+	/**
+	 * 
+	 * getworkAreaDatas 根据车间业务数据id获取工区数据
+	 * @author quyy
+	 * @param workShopDataId 车间数据id
+	 * @return
+	 */
+	public List<YearMonthPutieGQ> getworkAreaDatas(String workShopDataId);
+	
+	/**
+	 * 
+	 * saveFileName 保存工区数据的对应报表的报表名称，以便根据文件名称是否存在来区分当前报表是否已经填报
+	 * @author quyy
+	 * @param id 工区数据的id
+	 * @param attachType 由前端静态数据传的附表名称，对应数据库附表名称字段名
+	 *  @param fileName 报表名称
+	 */
+	public void saveFileName(String id,String attachType,String fileName);
+	/**
+	 * 
+	 * workAreaUnlock 车间解锁
+	 * @param workAreaIdLists 待解锁的车间业务数据id
+	 * @author chenshuang
+	 */
+	public void workAreaUnlock(List<String> workAreaIdLists);
+	
+	
+	/**
+	* 获取指定车间下应填报工区的总数
+	* getReportTotal 
+	* @param wsId 车间业务数据id
+	* @return
+	* String
+	* @author luoyan
+	 */
+	public String getReportTotal(String wsId);
+	
+	/**
+	* 获取已填报工区的总数
+	* getHasReport 
+	* @param wsId 车间业务数据id
+	* @param attachPath 报表的名称字段名
+	* @return
+	* String
+	* @author luoyan
+	 */
+	public String getHasReport(String wsId, String attachPath);
+
+	/**
+	 * 查询工区附件展示数据
+	* getAttachDataByGQId 
+	* @param id 工区业务数据id
+	* @return
+	* List<AttachShowDto>
+	* @author luoyan
+	 */
+	public List<AttachShowDto> getAttachDataByGQId(String id);
+
+	/**
+	 * 查询车间附件展示数据
+	* getAttachDataByGQId 
+	* @param id  车间数据的id
+	* @return
+	* List<AttachShowDto>
+	* @author luoyan
+	 */
+	public List<AttachShowDto> getAttachDataByCJId(String id);
+
+	/**
+	 * 查询段附件展示数据
+	* getAttachDataByGQId 
+	* @param ids 车间id
+	* @return
+	* List<AttachShowDto>
+	* @author luoyan
+	 */
+	public List<AttachShowDto> getAttachDataDuan(String ids);
+	
+	/**
+	 * 
+	 * getWorkAreaDataById 根据id查询工区数据的详情
+	 * @author quyy
+	 * @param id 工区业务数据id
+	 * @return
+	 */
+	public YearMonthPutieGQ getWorkAreaDataById(String id);
+
+	/**
+	 * 添加段是否可以导出
+	 * getAttachDataOfSegmentData 
+	 * @param result 附件详情集合
+	 * @param ids 车间id
+	 * @return
+	 * List<AttachShowDto>
+	 * @author luoyan
+	 */
+	public List<AttachShowDto> getAttachDataOfSegmentData(List<AttachShowDto> result, String ids);
+	/**
+	 * getAttachPlanDataDuan 获取编制页面弹框展示数据（导出、汇总）--段科室
+	 * @param ids 车间id
+	 * @return
+	 * @author chenshuang
+	 */
+	public List<AttachShowDto> getAttachPlanDataDuan(String ids);
+	/**
+	 * 
+	 * getAttachExecuteDataDuan 获取执行页面弹框展示数据（导出、汇总）--段科室
+	 * @param ids  车间id
+	 * @return
+	 * @author chenshuang
+	 */
+	public List<AttachShowDto> getAttachExecuteDataDuan(String ids);
+	
+	/**
+	 * 
+	 * @Title: getWorkshopName
+	 * @Description: 			根据工区年月报表Id获取对应的车间名字
+	 * @param workAreaId 		工区id
+	 * @return String (返回类型 ) 	车间名字
+	 * @throws 
+	 * @author gaohg
+	 */
+	String getWorkshopName(String workAreaId);
+	
+	
+	
+	
+	
+	
+}

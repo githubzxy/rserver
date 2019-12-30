@@ -1,0 +1,24 @@
+package com.enovell.yunwei.km_micor_service.dto.communicationResumeManage;
+
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+/**
+ * 
+ * 项目名称：km_micor_service
+ * 类名称：ConferenceMcuDto   
+ * 类描述:  会议系统-mcu
+ * 创建人：zhouxingyu
+ * 创建时间：2019年6月19日 下午4:12:30
+ * 修改人：zhouxingyu 
+ * 修改时间：2019年6月19日 下午4:12:30   
+ *
+ */
+@Data
+@EqualsAndHashCode(callSuper=true)
+public class ConferenceMcuDto extends PublicDto{
+
+	private String capacity;//容量(折合2M端口数)*
+	private String portConfQuantity;//MCU端口配置数量
+	private String portUseQuantity;//MCU端口使用数量
+	private String portInQuantity;//接入会议终端数量
+}

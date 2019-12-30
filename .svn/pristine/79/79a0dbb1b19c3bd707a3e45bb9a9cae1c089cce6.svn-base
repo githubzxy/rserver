@@ -1,0 +1,180 @@
+package com.enovell.yunwei.km_micor_service.service.technical.technicalDocumentManagement;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+
+import org.apache.commons.lang.StringUtils;
+import org.bson.Document;
+import org.bson.conversions.Bson;
+import org.bson.types.ObjectId;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.stereotype.Service;
+
+import com.enovell.yunwei.km_micor_service.dto.UploadFileDto;
+import com.enovell.yunwei.km_micor_service.dto.technicalManagement.TechnicalInfoDocumentDto;
+import com.enovell.yunwei.km_micor_service.util.ReadFileUtil;
+import com.mongodb.Block;
+import com.mongodb.MongoClient;
+import com.mongodb.client.FindIterable;
+import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.model.Filters;
+import com.sun.javafx.collections.MappingChange.Map;
+
+
+
+@Service(value = "TechnicalDocumentInfoService")
+public class TechnicalDocumentManageServiceImpl implements TechnicalDocumentManageService{
+
+	 @Value("${spring.data.mongodb.host}")
+	 private String mongoHost;
+	 @Value("${spring.data.mongodb.port}")
+	 private int mongoPort;
+	 @Value("${spring.data.mongodb.database}")
+	 private String mongoDatabase;
+	 @Autowired
+	 private ReadFileUtil readFileUtil;
+	 @Autowired
+	 private NamedParameterJdbcTemplate template;
+	@Override
+	public TechnicalInfoDocumentDto addTechnicalInfo(TechnicalInfoDocumentDto technicalInfo, UploadFileDto[] dtos) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public TechnicalInfoDocumentDto updateTechnicalInfo(TechnicalInfoDocumentDto technicalInfo, UploadFileDto[] dtos) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public TechnicalInfoDocumentDto getTechnicalInfoById(String id) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public void deleteTechnicalInfos(String ids) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public List<TechnicalInfoDocumentDto> getAllTechnicalInfoInfos(TechnicalInfoDocumentDto completionInfoDTO,
+			int first, int max) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public int getTechnicalInfoInfoCount(TechnicalInfoDocumentDto technicalInfoDTO) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+	@Override
+	public Document addDocument(Document doc, String collectionName) {
+		try(MongoClient mc = new MongoClient(mongoHost,mongoPort)){
+            MongoDatabase md = mc.getDatabase(mongoDatabase);
+            doc.append("status",1);
+            md.getCollection(collectionName).insertOne(doc);
+        }
+        return doc;
+	}
+
+	@Override
+	public Document findDatasById(String id, String collectionName) {
+		try(MongoClient mc = new MongoClient(mongoHost,mongoPort)){
+            MongoDatabase md = mc.getDatabase(mongoDatabase);
+            FindIterable<Document> findIterable = md.getCollection(collectionName).find(new Document("_id", new ObjectId(id)).append("status",1));
+            Document doc = findIterable.first();
+            doc.append("docId",doc.getObjectId("_id").toHexString());
+            doc.remove("_id");
+            return doc;
+        }
+	}
+
+	@Override
+	public Long findAllDocumentCount(String collectionName,String name ,String machineRoom,String  railLine,String startDate, String endDate, 
+			String currentDay, String userId) {
+		try(MongoClient mc = new MongoClient(mongoHost,mongoPort)) {
+            MongoDatabase md = mc.getDatabase(mongoDatabase);
+            Bson filter = getFilter(name,machineRoom,railLine,startDate,endDate,currentDay,userId);
+            return  md.getCollection(collectionName).count(filter);
+        }
+	}
+	/**
+	 * 
+	 * getFilter 设置mongo的查询拦截条件
+	 * @param startDate
+	 * @param endDate
+	 * @param project
+	 * @param currentDay
+	 * @param userId
+	 * @return
+	 */
+	private Bson getFilter(String name, String machineRoom,String  railLine,String startDate,String endDate,String currentDay,String userId) {
+		Bson filters=Filters.eq("status",1);
+		if (StringUtils.isNotBlank(name)) {
+			filters = Filters.and(filters,Filters.eq("name", name));
+		}
+		if (StringUtils.isNotBlank(machineRoom)) {
+			filters = Filters.and(filters,Filters.eq("machineRoom", machineRoom));
+		}
+		if (StringUtils.isNotBlank(railLine)) {
+			filters = Filters.and(filters,Filters.eq("railLine", railLine));
+		}
+		if(StringUtils.isNotBlank(startDate)){
+			filters = Filters.and(filters,Filters.gte("creatDate",startDate));
+        }
+        if(StringUtils.isNotBlank(endDate)){
+        	filters = Filters.and(filters,Filters.lte("creatDate",endDate));
+        }
+		
+		return filters;
+	}
+
+	@Override
+	public List<Document> findAllDocument(String collectionName,String name, String machineRoom,String  railLine,String createStartDate, String createEndDate,
+			int start, int limit, String currentDay, String userId) {
+			List<Document> results=new ArrayList<>();
+			try(MongoClient mc=new MongoClient(mongoHost,mongoPort)){
+				MongoDatabase md=mc.getDatabase(mongoDatabase);
+				Bson filter=getFilter(name,machineRoom,railLine,createStartDate,createEndDate,currentDay,userId);
+				FindIterable<Document> findIterable = md.getCollection(collectionName).find(filter).skip(start).limit(limit).sort(new Document("date", -1));
+				findIterable.forEach((Block<? super Document>) results::add);
+				 results.stream().forEach(d-> {
+			            d.append("docId",d.getObjectId("_id").toHexString());
+			            d.remove("_id");
+			        });
+			}
+			return results;
+	}
+
+	@Override
+	public Document updateDocument(Document doc, String collectionName) {
+		 try(MongoClient mc = new MongoClient(mongoHost,mongoPort)){
+	            MongoDatabase md = mc.getDatabase(mongoDatabase);
+	            return md.getCollection(collectionName)
+	                    .findOneAndUpdate(
+	                            Filters.eq("_id", new ObjectId(doc.getString("docId"))),new Document("$set",doc)
+	                    );
+	        }
+	}
+
+	@Override
+	public List<String> getMachineRooms(String railLine) {
+		String sql="select c.machine_name_ from res_base_rail_line a  " + 
+				"left join res_base_rail_line_machine b on a.rail_line_id_= b.line_id_ " + 
+				"left join res_base_rail_machineroom c on b.machine_id_ = c.id_  " ;
+				//"where a.name_ = :railLine";
+		HashMap<String ,Object> paramMap = new HashMap<String ,Object>();
+		//paramMap.put("railLine", railLine);
+		List<String> workShopList=template.queryForList(sql,paramMap, String.class);
+		return workShopList;
+	}
+
+}

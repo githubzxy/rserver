@@ -1,0 +1,84 @@
+package com.enovell.yunwei.km_micor_service.service.technical.deviceNameWorkManage;
+
+import java.util.List;
+
+import org.bson.Document;
+import org.springframework.web.multipart.MultipartFile;
+
+import com.enovell.yunwei.km_micor_service.dto.technicalManagement.DeviceNameWorkDto;
+/**
+ * 
+ * 项目名称：km_micor_service
+ * 类名称：DeviceNameWorkManageService   
+ * 类描述:  年月报表工作内容配置
+ * 创建人：zhouxingyu
+ * 创建时间：2019年7月23日 下午1:50:58
+ * 修改人：zhouxingyu 
+ * 修改时间：2019年7月23日 下午1:50:58   
+ *
+ */
+public interface DeviceNameWorkManageService {
+	
+	/**
+	 * 
+	 * addDocument 添加年月报表工作内容配置信息
+	 * @param document
+	 * @param collectionName
+	 * @return
+	 */
+	Document addDocument(Document document, String collectionName);
+	/**
+	 * 
+	 * findAllDocumentCount 查找条数
+	 * @param collectionName
+	 * @param deviceName
+	 * @param workContent
+	 * @return
+	 */
+	Long findAllDocumentCount(String collectionName, String deviceName, String workContent);
+	/**
+	 * 
+	 * findAllDocument 分页按条件查找
+	 * @param collectionName
+	 * @param deviceName
+	 * @param workContent
+	 * @param start
+	 * @param limit
+	 * @return
+	 */
+	List<Document> findAllDocument(String collectionName, String deviceName, String workContent, int start, int limit);
+	/**
+	 * 
+	 * findDocumentById 按Id查找
+	 * @param id
+	 * @param collectionName
+	 * @return
+	 */
+	Document findDocumentById(String id, String collectionName);
+	/**
+	 * 
+	 * modifyDocument 按id修改
+	 * @param document
+	 * @param collectionName
+	 * @param id 
+	 * @return
+	 */
+	Document modifyDocument(Document document, String collectionName, String id);
+	/**
+	 * 
+	 * removeDocument 批量删除
+	 * @param ids
+	 * @param collectionName
+	 */
+	void removeDocument(List<String> ids, String collectionName);
+	/**
+	 * 
+	 * getExcelInfo 封装表信息进excel
+	 * @param file
+	 * @return
+	 */
+	List<DeviceNameWorkDto> getExcelInfo(MultipartFile file);
+	List<Document> uploadFile(List<MultipartFile> multipartFiles);
+	void removeAll();
+
+}

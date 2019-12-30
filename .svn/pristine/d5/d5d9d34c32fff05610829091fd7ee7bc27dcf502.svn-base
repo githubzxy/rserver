@@ -1,0 +1,64 @@
+package com.enovell.yunwei.km_micor_service.service.technical.machineRoomManage;
+
+import com.enovell.yunwei.km_micor_service.dto.GridDto;
+import com.enovell.yunwei.km_micor_service.dto.ResultMsg;
+import com.enovell.yunwei.km_micor_service.dto.technicalManagement.LineNameDto;
+import com.enovell.yunwei.km_micor_service.dto.technicalManagement.MachineRoomDto;
+/**
+ * 
+ * @ProjectName：RINMS2MAIN
+ * @ClassName：BusinessReportService   
+ * @Description: 业务报表Service
+ * @date：2017年11月1日 下午2:25:58
+ * @modifier：
+ * @ModifyTime：2017年11月1日 下午2:25:58   
+ *
+ */
+public interface MachineRoomManageService {
+
+	/**
+	 * 
+	 * @Title: getAllDataBySearch  
+	 * @Description: 	通过条件查询数据
+	 * @param pid		父类id
+	 * @throws 
+	 */
+	GridDto<MachineRoomDto> getAllDataBySearch(String machineCode, String machineName,String name,String remark,int start, int limit);
+	
+	/**
+	 * 
+	 * @Title: addLine
+	 * @Description: 	      新增线别
+	 * @return ResultMsg (返回类型 )
+	 * @throws 
+	 */
+	ResultMsg addLine(MachineRoomDto dto) throws Exception;
+	
+	/**
+	 * 
+	 * @Title: getDataById
+	 * @Description:  		根据id查询线别
+	 * @param reportId		业务报表id
+	 * @throws 
+	 */
+	MachineRoomDto getDataById(String id);
+	
+	/**
+	 * 
+	 */
+	ResultMsg update(MachineRoomDto dto);
+	
+	/**
+	 * 
+	 * @Title: delete
+	 * @Description:    删除线别
+	 */
+	int deleteById(String id);
+
+	
+
+
+	
+	
+	
+}

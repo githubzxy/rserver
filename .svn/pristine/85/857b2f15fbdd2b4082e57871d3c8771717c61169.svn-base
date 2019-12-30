@@ -1,0 +1,49 @@
+package com.enovell.yunwei.km_micor_service.service.productionManage.JobRecord;
+
+import java.util.List;
+import java.util.Map;
+
+import org.apache.poi.ss.usermodel.Workbook;
+import org.bson.Document;
+import org.springframework.web.multipart.MultipartFile;
+
+import com.enovell.yunwei.km_micor_service.dto.GridDto;
+import com.enovell.yunwei.km_micor_service.dto.productManage.JobRecordDto;
+
+public interface JobRecordQueryService {
+
+	List<JobRecordDto> getExcelInfo(MultipartFile file);
+
+	List<Document> uploadFile(List<MultipartFile> files);
+	
+	void deleteAllDocument(String collectionName, String currentDay, String orgId);
+
+	Document addDocument(Document document, String collectionName);
+
+	boolean checkData(GridDto<Document> result,String startDate,String endDate, String project);
+
+	Long findAllDocumentCount(String collectionName,String workshopType,String workshopId,String workareaId, String startDate,String endDate, String project, String orgId, int orgType);
+
+	List<Document> findAllDocument(String collectionName,String workshopType,String workshopId,String workareaId, String startDate,String endDate, String project, String orgId, int orgType, int start, int limit);
+
+	Document findDocumentById(String id, String collectionName);
+
+	Document modifyDocument(Document document, String collectionName);
+
+	Workbook exportExcel(String date, String workShop, String workArea,String collectionName) throws Exception;
+	/**
+	 * 获取车间下拉选数据
+	 * @return
+	 */
+	List<Map<String, Object>> getWorkShops();
+	/**
+	 * 获取部门下拉选数据
+	 */
+	List<Map<String, Object>> getDeparts(String workShopName);
+	
+	
+	
+	List<Map<String, Object>> getShopAndDepart(String pid, String curId);
+
+
+}

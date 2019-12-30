@@ -1,0 +1,24 @@
+package com.enovell.yunwei.km_micor_service.dto.communicationResumeManage;
+
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+/**
+ * 
+ * 项目名称：km_micor_service
+ * 类名称：DispatchDutyDto   
+ * 类描述: 调度系统-车站值班台
+ * 创建人：zhouxingyu
+ * 创建时间：2019年6月19日 下午4:14:56
+ * 修改人：zhouxingyu 
+ * 修改时间：2019年6月19日 下午4:14:56   
+ *
+ */
+@Data
+@EqualsAndHashCode(callSuper=true)
+public class DispatchDutyDto extends PublicDto{
+	
+	private String numbeDigital;//所属数字环序号
+	private String numberDispatch;//所属调度操作台序号
+	 
+	
+}

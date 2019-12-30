@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>遗留信息</title>
+    <link rel="stylesheet" th:href="@{/bui/css/bs3/dpl.css}" />
+    <link rel="stylesheet" th:href="@{/bui/css/bs3/bui.css}" />
+    <script charset="utf-8" th:src="@{/common/sq.js}"></script>
+</head>
+<body>
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    seajs.config({
+        paths : {
+            common : "/common",
+            kmms : "/kmms",
+            bui : "/bui"
+        }
+    });
+    seajs.use('kmms/dayToJobManagement/remainInfo/remainInfoPage',function(Main){
+        var main = new Main({
+        	perId : [[${perId}]],//用于控制按钮权限
+        	userId : [[${userId}]],//登陆用户ID
+        	userName : [[${userName}]],//登陆用户名称
+        	orgId : [[${orgId}]],//登陆用户所属组织机构ID
+        	orgName : [[${orgName}]]});//登陆用户所属组织机构名称
+        main.render();
+    });
+    /*]]>*/
+</script>
+</body>
+</html>

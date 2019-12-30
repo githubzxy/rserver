@@ -1,0 +1,71 @@
+package com.enovell.yunwei.km_micor_service.service.technical.lineNameMangement;
+
+import java.util.List;
+import java.util.Map;
+
+import com.enovell.yunwei.km_micor_service.dto.GridDto;
+import com.enovell.yunwei.km_micor_service.dto.ResultMsg;
+import com.enovell.yunwei.km_micor_service.dto.technicalManagement.LineNameDto;
+/**
+ * 
+ * @ProjectName：RINMS2MAIN
+ * @ClassName：BusinessReportService   
+ * @Description: 业务报表Service
+ * @date：2017年11月1日 下午2:25:58
+ * @modifier：
+ * @ModifyTime：2017年11月1日 下午2:25:58   
+ *
+ */
+public interface LineNameMangementService {
+
+	/**
+	 * 
+	 * @Title: getAllDataBySearch  
+	 * @Description: 	通过条件查询数据
+	 * @param pid		父类id
+	 * @throws 
+	 */
+	GridDto<LineNameDto> getAllDataBySearch(String name,String desc,int start, int limit);
+	
+	/**
+	 * 
+	 * @Title: addReport
+	 * @Description: 	      新增报表
+	 * @param reportName  报表名字
+	 * @param parentId    父报表id
+	 * @return ResultMsg (返回类型 )
+	 * @throws 
+	 * @author gaohg
+	 */
+	ResultMsg addReport(String reportName,String parentId) throws Exception;
+	
+	/**
+	 * 
+	 * @Title: getReportDataById
+	 * @Description:  		根据id查询业务报表数据(用于修改业务报表等)
+	 * @param reportId		业务报表id
+	 * @return BusinessReport (返回类型 )
+	 * @throws 
+	 * @author gaohg
+	 */
+	LineNameDto getDataById(String id);
+	
+	/**
+	 * 
+	 */
+	ResultMsg update(String name,String desc);
+	
+	/**
+	 * 
+	 * @Title: delete
+	 * @Description:    删除业务报表
+	 */
+	String deleteById(String ids);
+
+	
+
+
+	
+	
+	
+}

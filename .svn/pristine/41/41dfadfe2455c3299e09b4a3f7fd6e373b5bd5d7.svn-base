@@ -1,0 +1,393 @@
+/**
+ * 故障新增
+ * @author yangsy
+ * @date 19-1-18
+ */
+define('kmms/dayToJobManagement/otherProductionInfo/otherProductionTroubleAdd',
+	[
+	 	'bui/common',
+	 	'bui/form',
+	 	'bui/calendar',
+	 	'common/data/PostLoad',
+	 	'common/form/FormContainer',
+	 	'common/org/OrganizationPicker',
+	 ],function(r){
+    var BUI = r('bui/common'),
+    	Calendar = r('bui/calendar'),
+    	PostLoad = r('common/data/PostLoad'),
+    	OrganizationPicker = r('common/org/OrganizationPicker'),
+        FormContainer= r('common/form/FormContainer');
+    var OtherProductionTroubleAdd = BUI.Overlay.Dialog.extend({
+        initializer : function(){
+            var _self = this;
+            _self.addChild(_self._initFormContainer());
+        },
+        renderUI : function(){
+        	var _self=this;
+//        	_self._initOrganizationPicker();
+        	_self._initDate();
+        	_self._getLines();//获取线名下拉选数据
+        	_self._getWorkShop();//获取车间下拉选数据
+//        	$('#formContainer #backOrgName').val(_self.get('rootOrgText'));
+//		    $('#formContainer #backOrgId').val(_self.get('rootOrgId'));
+        },
+        bindUI : function(){
+            var _self = this;
+            $("#formContainer #troubleOccurDate").on("change",function(){
+            	if($("#formContainer #troubleOccurDate").val()!=""&&$("#formContainer #troubleRecoverDate").val()!=""){
+            		var postLoad = new PostLoad({
+                        url : '/kmms/otherProductionInfoAction/getDelayMinutes.cn',
+                        el : _self.get('el'),
+                        loadMsg : '加载中...'
+                    });
+                    postLoad.load({occurDate:$("#formContainer #troubleOccurDate").val(),recoverDate:$("#formContainer #troubleRecoverDate").val()},function (date) {
+                    	if(date){
+                    		$('#formContainer #troubleDelayMinutes').val(date);
+                    	}
+                    });
+            	}
+            });
+            $("#formContainer #troubleRecoverDate").on("change",function(){
+            	if($("#formContainer #troubleOccurDate").val()!=""&&$("#formContainer #troubleRecoverDate").val()!=""){
+            		var postLoad = new PostLoad({
+                        url : '/kmms/otherProductionInfoAction/getDelayMinutes.cn',
+                        el : _self.get('el'),
+                        loadMsg : '加载中...'
+                    });
+                    postLoad.load({occurDate:$("#formContainer #troubleOccurDate").val(),recoverDate:$("#formContainer #troubleRecoverDate").val()},function (date) {
+                    	if(date){
+                    		$('#formContainer #troubleDelayMinutes').val(date);
+                    	}
+                    });
+            	}
+            });
+            
+//            var orgPicker=_self.get('orgPicker');
+            
+//            /**
+//             * 组织机构选择
+//             */
+//            orgPicker.on('orgSelected',function (e) {
+//                $('#formContainer #backOrgName').val(e.org.text);
+//    		    $('#formContainer #backOrgId').val(e.org.id);
+//            });
+
+            //定义按键
+            var buttons = [
+                {
+                    text:'保存',
+                    elCls : 'button',
+                    handler : function(){
+                        var success = _self.get('success');
+                        if(success){
+                            success.call(_self);
+                        }
+                    }
+                },{
+                    text:'关闭',
+                    elCls : 'button',
+                    handler : function(){
+                        if(this.onCancel() !== false){
+                            this.close();
+                        }
+                    }
+                }
+            ];
+            _self.set('buttons',buttons);
+            
+            //部门下拉选选项根据车间而变化
+            $("#formContainer #troubleWorkshop").on('change',function(){
+            	$("#formContainer #troubleWorkarea").empty();
+            	var orgName=$("#formContainer #troubleWorkshop").val();
+            	_self._getDepart(orgName);
+            });
+        },
+        
+        /**
+         * 获取部门下拉选数据
+         */
+        _getDepart:function(orgName){
+        	var _self=this;
+        	 $.ajax({
+                 url:'/kmms/networkManageInfoAction/getDepart',
+                 data:{workShopName : orgName},
+                 type:'post',
+                 dataType:"json",
+                 success:function(res){
+                	 $("#formContainer #troubleWorkarea").append("<option  value=''>请选择</option>");
+                	 for(var i=0;i<res.length;i++){
+                		 $("#formContainer #troubleWorkarea").append("<option  value="+res[i].orgName+">"+res[i].orgName+"</option>");
+                	 }
+                 }
+             })
+        },
+        
+        /**
+         * 获取车间下拉选数据
+         */
+        _getWorkShop:function(){
+        	 var _self = this;
+             $.ajax({
+                 url:'/kmms/networkManageInfoAction/getWorkShop',
+                 type:'post',
+                 dataType:"json",
+                 success:function(res){
+                	 $("#formContainer #troubleWorkshop").append("<option  value=''>请选择</option>");
+                	 for(var i=0;i<res.length;i++){
+                		 $("#formContainer #troubleWorkshop").append("<option  value="+res[i].orgName+">"+res[i].orgName+"</option>");
+                	 }
+                 }
+             })
+        },
+        
+        /**
+         * 获取线别
+         */
+        _getLines:function(){
+        	var _self=this;
+       	 $.ajax({
+	                url:'/kmms/networkManageInfoAction/getLines',
+	                type:'post',
+	                dataType:"json",
+	                success:function(res){
+	               	 $("#formContainer #troubleLineName").append("<option  value=''>请选择</option>");
+	               	 for(var i=0;i<res.length;i++){
+	               		 $("#formContainer #troubleLineName").append("<option  value="+res[i]+">"+res[i]+"</option>");
+	               	 }
+                }
+            });
+        },
+        
+        /**
+         * 初始化时间
+         */
+        _initDate: function () {
+            var _self = this;
+            var troubleDate = new Calendar.DatePicker({//加载日历控件
+                trigger: '#formContainer #troubleDate',
+                showTime: true,
+                autoRender: true,
+                textField:'#formContainer #troubleDate'
+            });
+            _self.set('troubleDate', troubleDate);
+            var troubleOccurDate = new Calendar.DatePicker({//加载日历控件
+            	trigger: '#formContainer #troubleOccurDate',
+            	showTime: true,
+            	autoRender: true,
+            	textField:'#formContainer #troubleOccurDate'
+            });
+            _self.set('troubleOccurDate', troubleOccurDate);
+            var troubleRecoverDate = new Calendar.DatePicker({//加载日历控件
+            	trigger: '#formContainer #troubleRecoverDate',
+            	showTime: true,
+            	autoRender: true,
+            	textField:'#formContainer #troubleRecoverDate'
+            });
+            _self.set('troubleRecoverDate', troubleRecoverDate);
+            
+            var postLoad = new PostLoad({
+                url : '/kmms/otherProductionInfoAction/getSystemDate.cn',
+                el : _self.get('el'),
+                loadMsg : '加载中...'
+            });
+            postLoad.load({},function (date) {
+            	if(date){
+            		$('#formContainer #troubleDate').val(date);
+            	}
+            });
+        },
+        
+//        /**
+//         * 初始化组织机构选择
+//         */
+//        _initOrganizationPicker:function(){
+//            var _self=this;
+//            var orgPicker = new OrganizationPicker({
+//                trigger : '#formContainer #backOrgName',
+//                rootOrgId:_self.get('rootOrgId'),//必填项
+//                rootOrgText:_self.get('rootOrgText'),//必填项
+//                url : '/kmms/commonAction/getChildrenByPidAndCurId',//必填项
+//                autoHide: true,
+//                align : {
+//                    points:['bl','tl']
+//                },
+//                zIndex : '10000',
+//                width:220,
+//                height:200
+//            });
+//            orgPicker.render();
+//            _self.set('orgPicker',orgPicker);
+//        },
+        
+        /**
+         * 初始化FormContainer
+         */
+        _initFormContainer : function(){
+            var _self = this;
+            var colNum = 2;
+            var childs = [
+//                {
+//                    label : '资料名称：',
+//                    redStarFlag : true,
+//                    itemColspan : 2,
+//                    item : '<input type="text"  name="name" id="name" data-rules="{required:true}" style="width:99.5%">'+
+//                    '<input type="hidden"  name="fileCols" id="fileCols" ' +
+//                        'value="uploadfile">'
+//                },
+				{
+					label : '车间：',
+					redStarFlag : true,
+					itemColspan : 1,
+					item : '<select name="troubleWorkshop" id="troubleWorkshop" style="width:99.5%" data-rules="{required:true}"/></select>'
+				},
+				{
+					label : '工区：',
+					redStarFlag : true,
+					itemColspan : 1,
+					item : '<select name="troubleWorkarea" id="troubleWorkarea" style="width:99.5%" data-rules="{required:true}"/></select>'
+				},
+				{
+					label : '线名：',
+					redStarFlag : true,
+					itemColspan : 1,
+					item : '<select name="troubleLineName" id="troubleLineName" style="width:99.5%" data-rules="{required:true}"/></select>'
+				},
+				{
+					label : '时间：',
+					redStarFlag : true,
+					itemColspan : 1,
+					item : '<input type="text" name="troubleDate" id="troubleDate" style="width:99%" class="calendar" data-rules="{required:true}" readonly/>'
+				},
+				{
+                    label : '故障地点：',
+                    redStarFlag : true,
+                    itemColspan : 1,
+                    item : '<input type="text" name="troubleSite" id="troubleSite" style="width:99%" data-rules="{required:true}"/>'
+                },
+                {
+                	label : '故障设备：',
+                	redStarFlag : true,
+                	itemColspan : 1,
+                	item : '<input type="text" name="troubleDevice" id="troubleDevice" style="width:99%" data-rules="{required:true}"/>'
+                },
+                {
+					label : '发生时间：',
+					redStarFlag : true,
+					itemColspan : 1,
+					item : '<input type="text" name="troubleOccurDate" id="troubleOccurDate" style="width:99%" class="calendar" data-rules="{required:true}" readonly/>'
+				},
+				{
+					label : '恢复时间：',
+					redStarFlag : true,
+					itemColspan : 1,
+					item : '<input type="text" name="troubleRecoverDate" id="troubleRecoverDate" style="width:99%" class="calendar" data-rules="{required:true}" readonly/>'
+				},
+				{
+					label : '延时分钟：',
+					itemColspan : 1,
+					item : '<input type="text" name="troubleDelayMinutes" id="troubleDelayMinutes" style="width:99%" readonly/>'
+				},
+				{
+					label : '影响车次：',
+					itemColspan : 1,
+					item : '<input type="text" name="troubleTrainNumber" id="troubleTrainNumber" style="width:99%"/>'
+				},
+				{
+					label : '故障概况：',
+					itemColspan : 2,
+					item : '<textarea name="troubleGeneral" id="troubleGeneral" style="width:99.5%;height:50px"/></textarea>'
+				},
+				{
+					label : '处理经过：',
+					itemColspan : 2,
+					item : '<textarea name="troubleDisposePass" id="troubleDisposePass" style="width:99.5%;height:50px"/></textarea>'
+				},
+				{
+					label : '原因分析：',
+					itemColspan : 2,
+					item : '<textarea name="troubleReasonAnalyse" id="troubleReasonAnalyse" style="width:99.5%;height:50px"/></textarea>'
+				},
+				{
+					label : '防范措施：',
+					itemColspan : 2,
+					item : '<textarea name="troubleMeasure" id="troubleMeasure" style="width:99.5%;height:50px"/></textarea>'
+				},
+				{
+					label : '定性定责：',
+					itemColspan : 2,
+					item : '<textarea name="troubleFixDuty" id="troubleFixDuty" style="width:99.5%;height:50px"/></textarea>'
+				},
+				{
+					label : '考核情况：',
+					itemColspan : 2,
+					item : '<textarea name="troubleCheckSituation" id="troubleCheckSituation" style="width:99.5%;height:50px"/></textarea>'
+				},
+				{
+					label : '备注：',
+					itemColspan : 2,
+					item : '<textarea name="troubleRemark" id="troubleRemark" style="width:99.5%;height:50px"/></textarea>'
+				},
+//                {
+//                    label : '附件：',
+//                    itemColspan : 2,
+//                    item : '<input name="uploadfile" id="uploadfile" style="height:70px;overflow-y :auto" type="file" multiple accept=".doc,.docx,.xls,.xlsx,.ppt,.pptx"/>'
+//                }
+            ];
+            var form = new FormContainer({
+                id : 'otherProductionTroubleAddForm',
+                colNum : colNum,
+                formChildrens : childs,
+                elStyle:{overflowY:'scroll',height:'400px'}
+            });
+            _self.set('formContainer',form);
+            return form;
+        }
+    },{
+        ATTRS : {
+            id : {value : 'otherProductionTroubleAddDialog'},
+            elAttrs : {value: {id:"otherProductionTroubleAdd"}},
+            title:{value:'新增故障情况'},
+            width:{value:750},
+            height:{value:500},
+            closeAction : {value:'destroy'},//关闭时销毁加载到主页面的HTML对象
+            mask : {value:true},
+            contextPath : {},
+            collectionName:{},
+            busiId:{},
+            userId:{},//登录用户ID
+            userName:{},//登录用户名称
+            orgId:{},//登录用户组织机构ID
+            orgName:{},//登录用户组织机构名称
+            success:{
+                value : function(){
+                    var _self = this;
+                    var formAdd = _self.getChild('otherProductionTroubleAddForm');
+                    //验证不通过
+	        		if(!formAdd.isValid()){
+	        			return;
+	        		}
+                    var formData = new FormData(formAdd.get('el')[0]);
+                    formData.append('collectionName',_self.get('collectionName'));
+                    formData.append('busiId',_self.get('busiId'));
+                    var xhr = new XMLHttpRequest();
+                    xhr.open("POST", "/zuul/kmms/otherProductionInfoAction/updateTroubleDoc");
+                    xhr.send(formData);
+                    xhr.onload = function (e) {
+                        if (e.target.response) {
+                            var result = JSON.parse(e.target.response);
+                            _self.fire("completeTroubleAddSave",{
+                                result : result
+                            });
+                        }
+                    }
+                }
+            },
+            events : {
+                value : {'completeTroubleAddSave' : true,}// 绑定保存按钮事件
+            },
+            rootOrgId:{value:'8affa073533aa3d601533bbef63e0010'},
+            rootOrgText:{value:'昆明通信段'},
+        }
+    });
+    return OtherProductionTroubleAdd;
+});

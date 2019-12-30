@@ -1,0 +1,102 @@
+package com.enovell.yunwei.km_micor_service.action.technicalManagement.lineMangement;
+
+import java.util.Arrays;
+import java.util.List;
+
+import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
+
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.enovell.yunwei.km_micor_service.dto.GridDto;
+import com.enovell.yunwei.km_micor_service.dto.ResultMsg;
+import com.enovell.yunwei.km_micor_service.dto.technicalManagement.LineNameDto;
+import com.enovell.yunwei.km_micor_service.service.technical.lineNameMangement.LineNameMangementService;
+/**
+ * 
+ * 项目名称：km_micor_service
+ * 类名称：VisitRoomRecordsAction   
+ * 类描述:  进出机房人员信息登记
+ * 创建人：zhouxingyu
+ * 创建时间：2019年5月30日 下午2:36:33
+ * 修改人：zhouxingyu 
+ * 修改时间：2019年5月30日 下午2:36:33   
+ */
+@RestController
+@RequestMapping("/lineNameMangementAction")
+public class LineMangementAction {
+	
+	@Resource(name = "lineNameService")
+	private LineNameMangementService service;
+	
+	@PostMapping(value = "/findAll")
+	public GridDto<LineNameDto> findAllInfo(HttpServletRequest request,
+			@RequestParam(name = "railLine",required=false) String name,
+			@RequestParam(name = "desc",required=false) String desc,
+			@RequestParam int start,
+			@RequestParam int limit
+			) {
+	 return service.getAllDataBySearch(name,desc,start,limit);
+       
+	}
+	
+	/**新增*/
+	@PostMapping(value="/addLine")
+	public ResultMsg addReport(
+			@RequestParam("railLine")String railLine,
+			@RequestParam("desc")String desc
+			){
+
+		ResultMsg rm = new ResultMsg();
+		try {
+			rm = service.addLine(railLine, desc);
+		} catch (Exception e) {
+			e.printStackTrace();
+			rm.setStatus(ResultMsg.FAIL_STATUS);
+			rm.setMsg("新增失败！请稍后重试。");
+		}
+		return rm;
+		
+	}
+	/**
+	 * 
+	 * findById 根据id查询数据
+	 * @param id
+	 * @param collectionName
+	 * @return
+	 */
+	 @PostMapping("/findById")
+	 public LineNameDto findById(String id){
+		 return service.getDataById(id);
+	 }
+	 
+	@PostMapping(value = "/update")
+	public ResultMsg updateInfo(HttpServletRequest request,
+			@RequestParam(name = "id",required=false) String id,
+			@RequestParam(name = "railLineEditDialog",required=false) String railLineEditDialog,
+			@RequestParam(name = "desc",required=false) String desc
+			
+			) {
+		ResultMsg rm = new ResultMsg();
+		try {
+			rm = service.update(id,railLineEditDialog,desc);
+		}catch(Exception ex) {
+			ex.printStackTrace();
+			rm.setStatus(ResultMsg.FAIL_STATUS);
+			rm.setMsg("修改失败！");
+		}
+		return rm;
+		  
+	}
+	  @PostMapping("/removeDoc")
+	    public ResultMsg removeDoc(@RequestParam("id") String id
+	                              ) {
+	        List<String> ids = Arrays.asList(id.split(","));
+	        ids.forEach(s-> service.deleteById(s));
+	        return ResultMsg.getSuccess("删除成功");
+	    }
+
+}

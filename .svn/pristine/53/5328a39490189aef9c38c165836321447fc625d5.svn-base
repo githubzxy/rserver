@@ -1,0 +1,406 @@
+/**
+ * 普铁年月报表-工区编制界面 主页模块，包含上查询下列表。
+ */
+seajs.use('yearMonthPlan/common/commonTypeMap.js');
+define('yearMonthPlan/yearMonthPuTie/compile/WorkAreaPuTieYearMonth',[
+	'bui/common','bui/data','bui/grid',
+	'common/data/PostLoad',
+	'common/date/YearPicker',
+	'common/grid/SearchGridContainer',
+	'yearMonthPlan/yearMonthPuTie/compile/WorkAreaPuTieYearMonthAdd',
+	'yearMonthPlan/yearMonthPuTie/compile/WorkAreaPuTieYearMonthUpdate',
+	'yearMonthPlan/yearMonthPuTie/compile/WorkAreaPuTieYearMonthEdit',
+	],function(require){
+	var BUI = require('bui/common'), Component = BUI.Component,
+	Data = require('bui/data'), Grid = require('bui/grid'),
+	PostLoad = require('common/data/PostLoad'),
+	YearPicker = require('common/date/YearPicker'),
+	SearchGridContainer = require('common/grid/SearchGridContainer'),
+	WorkAreaPuTieYearMonthAdd = require('yearMonthPlan/yearMonthPuTie/compile/WorkAreaPuTieYearMonthAdd'),
+	WorkAreaPuTieYearMonthUpdate = require('yearMonthPlan/yearMonthPuTie/compile/WorkAreaPuTieYearMonthUpdate'),
+	WorkAreaPuTieYearMonthEdit = require('yearMonthPlan/yearMonthPuTie/compile/WorkAreaPuTieYearMonthEdit');
+	
+	var WorkAreaPuTieYearMonth = Component.Controller.extend({
+		initializer : function() {
+			var _self = this;
+			var searchGridContainer = new SearchGridContainer({
+				searchForm : _self._initSearchForm(),
+				columns : _self._initColumns(),
+				store : _self._initGridStore(),
+				searchGrid : _self._initSearchGrid(),
+		    });
+			_self.addChild(searchGridContainer);
+		},
+		renderUI : function(){
+			var _self = this;
+			// 初始化年份控件
+			_self._initYearPicker();
+		},
+		/**
+		 *  初始化年份控件
+		 */
+		_initYearPicker : function(){
+			var _self = this;
+			var yearPicker = new YearPicker({
+				trigger : '#reportYearId',
+				autoHide : true,
+				align : {
+					points:['bl','tl']
+				},
+				success:function(){
+					var year = this.get('year');
+					$('#reportYearId').val(year);
+					this.hide();
+				},
+				cancel:function(){
+					this.hide();
+				},
+			});
+			yearPicker.render();
+		},
+		bindUI : function() {
+			var _self = this;
+			var store = _self.get('store');
+			var table = _self.getChild(SearchGridContainer.SEARCH_GRID_ID,true);
+			var tbar = table.get('tbar');
+			
+			//'新增' 按钮事件
+			$('.addBtn').on('click',function(){
+				_self._add(store,tbar);
+			});
+			
+			//'修改' 按钮事件
+			$('.updateBtn').on('click',function(){
+				var selections = table.getSelection();
+				if(selections.length==0 || selections.length!=1){
+					tbar.msg({msg:'请选择一条数据进行操作！'});
+					return ;
+				}
+				//有数据被选中，先判断状态
+				var status = selections[0].status;
+				if(status!=YearMonthWorkAreaStatus.WRITE_WORKAREA_DRAFT){
+					tbar.msg({msg:'只能修改"草稿"状态的年月表！'});
+					return;
+				}
+				var reportId = selections[0].id;
+				//调用修改方法
+				_self._update(reportId,tbar,store);
+				
+			});
+			
+			//'批量删除' 按钮 事件
+			$('.deleteBtn').on('click',function(){
+				_self._delete(tbar,table);
+			});
+			
+			//'编辑' 链接事件
+			table.on("itemclick",function(e){
+				_self._editData(e);
+			});
+			
+			//'上报' 链接事件
+			table.on("itemclick",function(e){
+				_self._reportData(e,tbar);
+			});
+		},
+		/**
+		 * 增加一条报表数据
+		 */
+		_add : function(store,tbar){
+			var _self = this;
+			var workAreaPuTieYearMonthAdd = new WorkAreaPuTieYearMonthAdd({
+				user : _self.get('user')
+			});
+			workAreaPuTieYearMonthAdd.show();
+			workAreaPuTieYearMonthAdd.on('saveBtn',function(e){
+				workAreaPuTieYearMonthAdd.close();
+				if(e.result.status==1){
+					tbar.msg({msg:e.result.msg,status:e.result.status});
+				}else{
+					tbar.msg({msg:e.result.msg});
+				}
+				store.load();
+			});
+		},
+		/**
+		 * 修改一条数据
+		 */
+		_update : function(reportId,tbar,store){
+			var _self = this;
+			//有一条数据选中，修改报表
+			var workAreaPuTieYearMonthUpdate = new WorkAreaPuTieYearMonthUpdate({
+			     reportId:reportId,
+			     user : _self.get('user'),
+			});
+			workAreaPuTieYearMonthUpdate.show();
+			workAreaPuTieYearMonthUpdate.on('updateBtn',function(e){
+				workAreaPuTieYearMonthUpdate.close();
+				if(e.result.status==1){
+					tbar.msg({msg:e.result.msg,status:e.result.status});
+				}else{
+					tbar.msg({msg:e.result.msg});
+				}
+				store.load();
+			});
+		},
+		/**
+		 * 删除数据
+		 */
+		_delete : function(tbar,table){
+			var _self = this;
+			var selections = table.getSelection();
+			if(selections.length==0){
+				//没有数据选中，提示
+				tbar.msg({msg:'请至少选择一条数据进行操作！'});
+				return ;
+			}
+			//有数据被选中
+			for(var i=0;i<selections.length;i++){
+				//先判断状态
+				var status = selections[i].status;
+				if(status!=YearMonthWorkAreaStatus.WRITE_WORKAREA_DRAFT){
+					tbar.msg({msg:'只能删除"草稿"状态的年月表！'});
+					return;
+				}
+			}
+			//状态为"草稿",删除数据
+			BUI.Message.Confirm('确定删除此年月表吗?<br/>',function(){
+    			var ids=selections.map(function(s){return s.id}).join();
+    			var postLoad=new PostLoad({
+    				el:_self.get('el'),
+    				url:'/kmms/yearMonthPuTieGQAction/deleteReports.cn',
+    				loadMsg:'删除中...'
+    			});
+    			postLoad.load({ids : ids},function(result){
+    				if(result.status=='1'){
+						tbar.msg({msg:result.msg,status:result.status});
+					}else{
+						tbar.msg({msg:result.msg});
+					}
+    				_self.get('store').load();
+    			});
+    		},'question');
+		},
+		/**
+		 * 编辑操作
+		 */
+		_editData : function(e){
+			var _self = this;
+			var target = $(e.domTarget);
+			if(target.hasClass('edit')){
+				var workAreaPuTieYearMonthEdit = new WorkAreaPuTieYearMonthEdit({
+					title:'工区的年月报表填报及详情查看',
+					id : e.item.id,
+					status : e.item.status,
+					filePath : _self.get('filePath'),
+					listeners : {
+						closing : function(){//关闭窗口时刷新列表
+							_self.get('store').load();
+						}
+					},
+				});
+				workAreaPuTieYearMonthEdit.show();
+			}
+			if(target.hasClass('execute')){
+				window.parent.menuClick("工区年月表执行","/pageKmms/page/workAreaPuTieYearMonthExecute",null);
+			}
+		},
+		/**
+		 * 上报功能
+		 */
+		_reportData : function(e,tbar){
+			var _self = this;
+			var target = $(e.domTarget);
+			if(target.hasClass('submit')){
+	    		BUI.Message.Confirm('确定上报此年月表吗?<br/>',function(){
+	    			var postLoad=new PostLoad({
+	    				el:_self.get('el'),
+	    				url:'/kmms/yearMonthPuTieGQAction/reportToWorkShop.cn',
+	    				loadMsg:'上报中...'
+	    			});
+	    			postLoad.load({
+    					id:e.item.id,
+		    			year:e.item.year,
+		    			userString:JSON.stringify(_self.get('user')),
+    				},function(result){
+	    				if(result.status=='1'){
+	    					tbar.msg({msg:result.msg,status:result.status});
+						}else{
+							tbar.msg({msg:result.msg});
+						}
+	    				_self.get('store').load();
+	    			});
+	    		},'question');
+			}
+		},
+		/**
+		 * 上查询模块
+		 */
+		_initSearchForm : function() {
+			var _self = this;
+  			return {
+  				items : [{
+	  				label : '名称',
+	  				item : '<input name="name" type="text" id="reportNameId"/>'
+	  			},{
+	  				label : '年份',
+	  				item : '<input name="year" type="text" id="reportYearId" readonly="readonly"/>'
+	  			},{
+	  				label : '状态',
+	  				item : '<select name="status" id="reportStatusId">' +
+	  							'<option value="">请选择</option>'        +
+	  							'<option value="'+YearMonthWorkAreaStatus.WRITE_WORKAREA_UNLOCK+'">'+YearMonthWorkAreaStatus.WRITE_WORKAREA_UNLOCK_NAME+'</option>' 		+
+	  							'<option value="'+YearMonthWorkAreaStatus.WRITE_WORKAREA_DRAFT+'">'+YearMonthWorkAreaStatus.WRITE_WORKAREA_DRAFT_NAME+'</option>'       +
+	  							'<option value="'+YearMonthWorkAreaStatus.WRITE_WORKAREA_REPORT+'">'+YearMonthWorkAreaStatus.WRITE_WORKAREA_REPORT_NAME+'</option>' 		+ 
+	  							'<option value="'+YearMonthWorkAreaStatus.WRITE_WORKAREA_WORKSHOP_PASS+'">'+YearMonthWorkAreaStatus.WRITE_WORKAREA_WORKSHOP_PASS_NAME+'</option>'	+ 
+	  							'<option value="'+YearMonthWorkAreaStatus.WRITE_WORKAREA_WORKSHOP_FAIL+'">'+YearMonthWorkAreaStatus.WRITE_WORKAREA_WORKSHOP_FAIL_NAME+'</option>'  + 
+	  							'<option value="'+YearMonthWorkAreaStatus.WRITE_WORKAREA_SEGMENT_FAIL+'">'+YearMonthWorkAreaStatus.WRITE_WORKAREA_SEGMENT_FAIL_NAME+'</option>' 	+ 
+	  							'<option value="'+YearMonthWorkAreaStatus.WRITE_WORKAREA_SEGMENT_PASS+'">'+YearMonthWorkAreaStatus.WRITE_WORKAREA_SEGMENT_PASS_NAME+'</option>'  + 
+	  							'<option value="'+YearMonthWorkAreaStatus.WORKAREA_EXECUTE_REPORT+'">'+YearMonthWorkAreaStatus.WORKAREA_EXECUTE_REPORT_NAME+'</option>' 		+
+	  							'<option value="'+YearMonthWorkAreaStatus.WORKAREA_WORKSHOP_EXECUTE_PASS+'">'+YearMonthWorkAreaStatus.WORKAREA_WORKSHOP_EXECUTE_PASS_NAME+'</option>'       +
+	  							'<option value="'+YearMonthWorkAreaStatus.WORKAREA_WORKSHOP_EXECUTE_FAIL+'">'+YearMonthWorkAreaStatus.WORKAREA_WORKSHOP_EXECUTE_FAIL_NAME+'</option>' 		+ 
+	  							'<option value="'+YearMonthWorkAreaStatus.WORKAREA_SEGMENT_EXECUTE_FAIL+'">'+YearMonthWorkAreaStatus.WORKAREA_SEGMENT_EXECUTE_FAIL_NAME+'</option>'	+ 
+	  							'<option value="'+YearMonthWorkAreaStatus.WORKAREA_SEGMENT_EXECUTE_PASS+'">'+YearMonthWorkAreaStatus.WORKAREA_SEGMENT_EXECUTE_PASS_NAME+'</option>'  + 
+	  						'</select>'
+	  			}]
+  			};
+		},
+		/**
+		 * 下列表表头模块
+		 */
+		_initColumns : function(){
+			var _self = this;
+			/*表格列设置*/
+			var columns = [{
+				title : '年月表名称',
+				dataIndex : 'name',
+				elCls : 'center',
+				width : '50%'
+			},{
+				title:'年份',
+				dataIndex:'year',
+				elCls : 'center',
+				width: '80'
+			},{
+				title : '所属部门',
+				dataIndex : 'orgName',
+				elCls : 'center',
+				width : '150'
+			},{
+				title:'创建时间',
+				dataIndex:'createTime',
+				elCls : 'center',
+				renderer:Grid.Format.datetimeRenderer,
+				width: '80'
+			},{
+				title:'填报人',
+				dataIndex:'userName',
+				elCls : 'center',
+				width: '150'
+			},{
+				title:'上报时间',
+				dataIndex:'reportTime',
+				elCls : 'center',
+				renderer:Grid.Format.datetimeRenderer,
+				width: '80'
+			},{
+				title : '退回原因',
+				dataIndex : 'failReason',
+				elCls : 'center',
+				width : '200'
+			},{
+				title : '审核状态',
+				dataIndex : 'status',
+				elCls : 'center',
+				width : '150',
+				renderer :function(value){
+					return YearMonthWorkAreaStatus.statusName(value)
+				} 
+			},{
+				title:'操作',
+				elCls : 'center',
+				width: '150',
+				dataIndex : 'status',
+				renderer:function(value,obj){
+					//根据字段attachName8_1/attachName8_2/attachName8_3/attachName8_4是否都为空来判断是否有一张报表已填写 决定工区“上报”和“详情”的展示
+					var btnValid = (obj.attachName8_1||obj.attachName8_2||obj.attachName8_3||obj.attachName8_4)?'inline-block' : 'none';
+					if(parseInt(value)>=parseInt(YearMonthWorkAreaStatus.WRITE_WORKAREA_SEGMENT_PASS) ){
+						return '<span id="editId" class="grid-command edit">详情</span>&nbsp;'+
+						'<span id="execute" class="grid-command execute">年月表执行</span>';
+					}
+					switch(value){
+						case YearMonthWorkAreaStatus.WRITE_WORKAREA_UNLOCK:
+						case YearMonthWorkAreaStatus.WRITE_WORKAREA_DRAFT:
+						case YearMonthWorkAreaStatus.WRITE_WORKAREA_WORKSHOP_FAIL:
+						case YearMonthWorkAreaStatus.WRITE_WORKAREA_SEGMENT_FAIL:
+							return '<span id="editId" class="grid-command edit">编辑</span>'
+							 	   +'&nbsp;<span id="submitId" class="grid-command submit" style="display:'+btnValid+'">上报</span>';
+						default:
+							return '<span id="editId" class="grid-command edit" style="display:'+btnValid+'">详情</span>'
+					}
+				},
+			}];
+			return columns;
+		},
+		/**
+		 * 获取下列表数据函数
+		 */
+		_initGridStore : function(){
+			var _self = this;
+			var store = new Data.Store({
+				url : "/kmms/yearMonthPuTieGQAction/queryAllData.cn",
+				params : {
+					name : '',
+					year : '',
+					status : '',
+					userString : JSON.stringify(_self.get('user')),
+				},
+				proxy : {
+					method : 'post',
+					dataType : 'json'
+				},
+				pageSize : 10,
+				autoLoad :true
+			});
+			_self.set('store',store);
+			return store;
+		},
+		/**
+		 * 下查询表格上方按钮函数
+		 */
+		_initSearchGrid : function(){
+			var _self = this;
+			var searchGrid = {
+				tbarItems :	[{
+					id : 'add',
+					btnCls : 'button button-small addBtn',
+					text : '<i class="icon-plus"></i>新增',
+		        },{
+                	xclass : 'bar-item-separator' // 竖线分隔符
+                },{
+					id : 'update',
+					btnCls : 'button button-small updateBtn',
+					text : '<i class="icon-edit"></i>修改',
+		        },
+		        {
+					xclass : 'bar-item-separator' // 竖线分隔符
+				},{
+                	id : 'delete',
+                	btnCls : 'button button-small deleteBtn',
+                	text : '<i class="icon-remove"></i>批量删除',
+                }],
+		        plugins : [
+		        	Grid.Plugins.CheckSelection,//多选框插件
+					Grid.Plugins.RowNumber//列序号插件
+				],
+			};
+			return searchGrid;
+		},
+	}, {
+		ATTRS : {
+			user : {},
+			filePath : {}
+		}
+	})
+	return WorkAreaPuTieYearMonth;
+});

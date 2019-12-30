@@ -1,0 +1,857 @@
+package com.enovell.yunwei.km_micor_service.action.dayToJobManageAction;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.URLEncoder;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.commons.lang.StringUtils;
+import org.bson.Document;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.enovell.yunwei.km_micor_service.dto.GridDto;
+import com.enovell.yunwei.km_micor_service.dto.ResultMsg;
+import com.enovell.yunwei.km_micor_service.service.UserService;
+import com.enovell.yunwei.km_micor_service.service.dayToJobManageService.NetworkManageInfoService;
+import com.enovell.yunwei.km_micor_service.util.JsonUtil;
+import com.mongodb.DBObject;
+import com.mongodb.util.JSON;
+
+/**
+ * kunmingTXD
+ * 昆明微服务网管信息Action
+ * @author yangsy
+ * @date 19-1-16
+ * 修改人：zhouxingyu 
+ * 修改时间：2019年3月23日 下午7:25:05 
+ */
+@RestController
+@RequestMapping("/networkManageInfoAction")
+public class NetworkManageInfoAction {
+    @Resource(name = "networkManageInfoService")
+    private NetworkManageInfoService service;
+    @Resource(name = "userService")
+    private UserService userService;
+    
+	@RequestMapping("/getChildrenByPidAndCurId")
+	public List<Map<String, Object>> getChildrenByPidAndCurId(@RequestParam("id") String id,
+			@RequestParam(required = false, value = "curId") String curId) {
+		return userService.getChildrenByPidAndCurId(id, curId);
+	}
+    
+    /**
+     * getSystemDate 获取当前系统时间
+     * @return String
+     */
+    @PostMapping("/getSystemDate")
+    public String getSystemDate() {
+        return JsonUtil.getSystemDate();
+    }
+    @PostMapping("/getSystemDateToYearMonthDay")
+    public String getSystemDateToYearMonthDay() {
+    	return JsonUtil.getSystemDateToYearMonthDay(new Date());
+    }
+    /**
+     * 获取两个日期之间的分钟数
+     * @param troubleOccurDate
+     * @param troubleRecoverDate
+     * @return
+     */
+    @PostMapping("/getDelayMinutes")
+    public String getDelayMinutes(
+    						@RequestParam(name = "occurDate") String occurDate,
+    						@RequestParam(name = "recoverDate") String recoverDate) {
+//    	long nd = 1000*24*60*60;
+    	long nh = 1000*60*60;
+//    	long nm = 1000*60;
+    	SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    	Date startDate = null;
+        Date endDate = null;
+        long diff = 0l;
+        long min = 0l;
+        try {
+            if (StringUtils.isNotBlank(occurDate)) {
+                startDate = sdf.parse(occurDate);
+            }
+            if (StringUtils.isNotBlank(recoverDate)) {
+                endDate = sdf.parse(recoverDate);
+            }
+            diff = endDate.getTime()-startDate.getTime();
+            min = diff/1000/60;
+        } catch (ParseException e) {
+        	e.printStackTrace();
+        }
+    	return String.valueOf(min);
+    }
+    
+    /**
+     * 获取线名
+     */
+    @PostMapping("/getLines")
+	 public List<String> getLines(){
+		 return service.getLineData();
+	 }
+    @PostMapping("/getStationNoCondition")
+    public List<String> getStationNoCondition(){
+    	return service.getStationNoConditionData();
+    }
+    @PostMapping("/getStations")
+    public List<Map<String, Object>> getStations(@RequestParam(name = "lineName") String lineName,HttpServletRequest request){
+    	return service.getStationsData(lineName);
+    }
+    /**
+     * 获取车间
+     */
+    @PostMapping("/getWorkShop")
+	 public List<Map<String, Object>> getWorkShop(){
+		return service.getWorkShops();
+	 }
+    /**
+     * 获取工区
+     */
+	 @PostMapping("/getDepart")
+	 public List<Map<String, Object>> getDepart(String workShopName){
+		return service.getDeparts(workShopName);
+	 }
+
+    /**
+     * 新增数据
+     * 防止上传文件名乱码，需在路径最前加入/zuul，此处为localhost:homeport/zuul/kmms/networkManageInfoAction/addDoc
+     * @param createDate 创建日期
+     * @param type 类型
+     * @param backOrgName 反馈部门名称
+     * @param backOrgId 反馈部门ID
+     * @param infoResult 信息后果
+     * @param lost 是否遗留
+     * @param detail 内容及处理情况
+     * @param remark 备注
+     * @param projectType 模块标识（network：表示网管信息模块）
+     * @param collectionName 保存表名
+     * @return 保存后的数据对象
+     */
+    @PostMapping("/addDoc")
+    public ResultMsg addDoc(
+    						@RequestParam(name = "createDate") String createDate,
+    						@RequestParam(name = "type") String type,
+    						@RequestParam(name = "backOrgName") String backOrgName,
+                            @RequestParam(name = "backOrgId") String backOrgId,
+                            @RequestParam(name = "backPerson") String backPerson,
+                            @RequestParam(name = "infoResult") String infoResult,
+                            @RequestParam(name = "lost") String lost,
+                            @RequestParam(name = "system") String system,
+                            @RequestParam(name = "systemType") String systemType,
+                            @RequestParam(name = "detail") String detail,
+                            @RequestParam(name = "remark") String remark,
+                            @RequestParam(name = "userId") String userId,
+                            @RequestParam(name = "orgId") String orgId,
+                            @RequestParam(name = "projectType") String projectType,
+                            @RequestParam(name = "collectionName") String collectionName,
+                            HttpServletRequest request) {
+        Document document = new Document();
+        
+        document.put("createDate", createDate);
+        document.put("type", type);
+        document.put("backOrgName", backOrgName);
+        document.put("backOrgId", backOrgId);
+        document.put("backPerson", backPerson);
+        document.put("infoResult", infoResult);
+        document.put("lost", lost);
+        document.put("system", system);
+        document.put("systemType", systemType);
+        document.put("detail", detail);
+        document.put("remark", remark);
+        document.put("userId", userId);
+        document.put("orgId", orgId);
+        document.put("projectType", projectType);
+        document.put("summaryDate", "");//汇总日期
+        document.put("summaryPersonId", "");//汇总人ID
+        document.put("summaryPersonName", "");//汇总人名称
+        if("1".equals(lost)){
+        	document.put("print", "1");//当遗留状态修改为"1"（遗留）时，修改是否打印字段内容为"1"（打印）
+        }else{
+        	document.put("print", "");//是否打印字段
+        }
+        Document result = service.addDocument(document, collectionName);
+        return ResultMsg.getSuccess("新增成功", result);
+    }
+    
+    /**
+     * 主页查询
+     * @param collectionName 保存表名
+     * @param startUploadDate 查询时间
+     * @param endUploadDate 查询时间
+     * @param start 0
+     * @param limit 20
+     * @return GridDto
+     */
+    @PostMapping("/findAll")
+    public GridDto<Document> findAll(
+    								@RequestParam String collectionName,
+    								@RequestParam String userId,
+    								@RequestParam String orgId,
+    								String infoResult,
+                                    String type,
+                                    String system,
+                                    String systemType,
+                                    String startUploadDate,
+                                    String endUploadDate,
+                                    String detail,
+                                    @RequestParam int start, 
+                                    @RequestParam int limit) {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd H:mm:ss");
+        SimpleDateFormat sdfDay = new SimpleDateFormat("yyyy-MM-dd");
+        Date currentDate = new Date();
+        String currentDay = "";
+        Date startDate = null;
+        Date endDate = null;
+        GridDto<Document> result = new GridDto<>();
+        try {
+            if (StringUtils.isNotBlank(startUploadDate)) {
+                startDate = sdf.parse(startUploadDate);
+            }
+            if (StringUtils.isNotBlank(endUploadDate)) {
+                endDate = sdf.parse(endUploadDate);
+            }
+            currentDay = sdfDay.format(currentDate);
+        } catch (ParseException e) {
+        	result.setHasError(true);
+        	result.setError("时间格式错误");
+        	return result;
+        }
+        result.setResults(service.findAllDocumentCount(collectionName, userId, orgId, currentDay,infoResult,type, startUploadDate, endUploadDate,detail,system,systemType));
+        result.setRows(service.findAllDocument(collectionName, userId, orgId, currentDay,infoResult,type, startUploadDate, endUploadDate, start, limit,detail,system,systemType));
+        return result;
+    }
+    
+    /**
+     * 根据主键ID查询对应数据
+     * @param id
+     * @param collectionName
+     * @return ResultMsg
+     */
+    @PostMapping("/findById")
+    public ResultMsg findDocById(
+    							@RequestParam("id") String id,
+    							@RequestParam("collectionName") String collectionName) {
+        Document result = service.findDocumentById(id, collectionName);
+        return ResultMsg.getSuccess("查询完成", result);
+    }
+    
+    /**
+     * 修改一条记录的内容
+     * @param id
+     * @param createDate
+     * @param type
+     * @param backOrgName
+     * @param backOrgId
+     * @param backPerson
+     * @param infoResult
+     * @param lost
+     * @param detail
+     * @param remark
+     * @param collectionName
+     * @param request
+     * @return
+     */
+    @PostMapping("/updateDoc")
+    public ResultMsg updateDoc(
+    							@RequestParam("id") String id,
+    							@RequestParam(name = "createDate") String createDate,
+    							@RequestParam(name = "type") String type,
+    							@RequestParam(name = "backOrgName") String backOrgName,
+    							@RequestParam(name = "backOrgId") String backOrgId,
+    							@RequestParam(name = "backPerson") String backPerson,
+                                @RequestParam(name = "infoResult") String infoResult,
+                                @RequestParam(name = "lost") String lost,
+                                @RequestParam(name = "system") String system,
+                                @RequestParam(name = "systemType") String systemType,
+                                @RequestParam(name = "detail") String detail,
+                                @RequestParam(name = "remark") String remark,
+                                @RequestParam("collectionName") String collectionName,
+                                HttpServletRequest request) {
+        Document doc = service.findDocumentById(id,collectionName);
+        doc.put("createDate", createDate);
+        doc.put("type", type);
+        doc.put("backOrgName", backOrgName);
+        doc.put("backOrgId", backOrgId);
+        doc.put("backPerson", backPerson);
+        doc.put("infoResult", infoResult);
+        doc.put("lost", lost);
+        doc.put("system", system);
+        doc.put("systemType", systemType);
+        doc.put("detail", detail);
+        doc.put("remark", remark);
+        if("1".equals(lost)){
+        	doc.put("print", "1");//当遗留状态修改为"1"（遗留）时，修改是否打印字段内容为"1"（打印）
+        	doc.put("summaryDate" , "");
+        	doc.put("summaryPersonId" , "");
+        	doc.put("summaryPersonName" , "");
+        }
+        Document res = service.updateDocument(doc, collectionName);
+        return ResultMsg.getSuccess("修改成功", res);
+    }
+
+    /**
+     * 删除数据
+     * @param id 数据id
+     * @param collectionName 表名
+     * @return 状态返回
+     */
+	@PostMapping("/removeDoc")
+	public ResultMsg removeDoc(@RequestParam("id") String id, @RequestParam("collectionName") String collectionName) {
+		List<String> ids = Arrays.asList(id.split(","));
+		service.removeDocument(ids, collectionName);
+		return ResultMsg.getSuccess("删除成功");
+	}
+    
+    /**
+     * 通过自定义的业务ID更新一条数据的内容（在原有数据的基础上加事故信息）
+     * @param busiId
+     * @param accidentLineName
+     * @param accidentDate
+     * @param accidentLevel
+     * @param accidentDetailLevel
+     * @param accidentDigest
+     * @param accidentReason
+     * @param accidentGeneral
+     * @param accidentDutySituation
+     * @param collectionName
+     * @param request
+     * @return
+     */
+    @PostMapping("/updateAccidentDoc")
+    public ResultMsg updateAccidentDoc(
+    							String edit,
+    							@RequestParam("busiId") String busiId,
+    							@RequestParam(name = "accidentObligationDepart") String accidentObligationDepart,
+    							@RequestParam(name = "accidentLineName") String accidentLineName,
+    							@RequestParam(name = "accidentDate") String accidentDate,
+    							@RequestParam(name = "accidentLevel") String accidentLevel,
+    							@RequestParam(name = "accidentDetailLevel") String accidentDetailLevel,
+    							@RequestParam(name = "accidentDigest") String accidentDigest,
+                                @RequestParam(name = "accidentReason") String accidentReason,
+                                @RequestParam(name = "accidentGeneral") String accidentGeneral,
+                                @RequestParam(name = "accidentDutySituation") String accidentDutySituation,
+                                @RequestParam(name = "accidentUploadFileArr") String accidentUploadFileArr,
+                                @RequestParam("collectionName") String collectionName,
+                                HttpServletRequest request) {
+        Document doc = service.findDocumentByBusiId(busiId,collectionName);
+
+        //事故
+        doc.put("accidentFillState", "1");//是否填写详细信息后果，“1”为填写
+        doc.put("accidentObligationDepart", accidentObligationDepart);
+        doc.put("accidentLineName", accidentLineName);
+        doc.put("accidentDate", accidentDate);
+        doc.put("accidentLevel", accidentLevel);
+        doc.put("accidentDetailLevel", accidentDetailLevel);
+        doc.put("accidentDigest", accidentDigest);
+        doc.put("accidentReason", accidentReason);
+        doc.put("accidentGeneral", accidentGeneral);
+        doc.put("accidentDutySituation", accidentDutySituation);
+        DBObject uploadFile =(DBObject) JSON.parse(accidentUploadFileArr);
+        doc.put("accidentUploadFileArr", uploadFile);
+        
+        //故障
+        doc.put("troubleFillState", "");//是否填写详细信息后果，“1”为填写
+    	doc.put("troubleObligationDepart", "");
+//    	doc.put("troubleWorkshop", troubleWorkshop);
+//    	doc.put("troubleWorkarea", troubleWorkarea);
+    	doc.put("troubleLineName", "");
+    	doc.put("troubleDate", "");
+    	doc.put("troubleSite", "");
+    	doc.put("troubleDevice", "");
+    	doc.put("troubleOccurDate", "");
+    	doc.put("troubleRecoverDate", "");
+    	doc.put("troubleDelayMinutes", "");
+    	doc.put("troubleTrainNumber", "");
+    	doc.put("troubleGeneral", "");
+    	doc.put("troubleDisposePass", "");
+    	doc.put("troubleReasonAnalyse", "");
+    	doc.put("troubleMeasure", "");
+    	doc.put("troubleFixDuty", "");
+    	doc.put("troubleCheckSituation", "");
+    	doc.put("troubleRemark", "");
+        doc.put("troubleUploadFileArr", "");
+        
+        //障碍
+        doc.put("obstacleFillState", "");//是否填写详细信息后果，“1”为填写
+    	doc.put("obstacleObligationDepart", "");
+    	doc.put("obstacleDate", "");
+    	doc.put("obstaclePlace", "");
+    	doc.put("obstacleDeviceType", "");
+    	doc.put("obstacleDeviceName", "");
+    	doc.put("obstacleOccurDate", "");
+    	doc.put("obstacleRecoverDate", "");
+    	doc.put("obstacleDelayMinutes", "");
+    	doc.put("obstacleReceiver", "");
+    	doc.put("obstacleDelayCoach", "");
+    	doc.put("obstacleDelayTruck", "");
+    	doc.put("obstacleType", "");
+    	doc.put("obstacleDuty", "");
+    	doc.put("obstaclePhenomenon", "");
+    	doc.put("obstacleReasonAnalyse", "");
+    	doc.put("obstacleMeasure", "");
+    	doc.put("obstacleSuingPeople", "");
+    	doc.put("obstacleSuingDate", "");
+        doc.put("obstacleUploadFileArr", "");
+        
+        //安全隐患
+        doc.put("securityFillState", "");//是否填写详细信息后果，“1”为填写
+        doc.put("securityObligationDepart", "");
+        doc.put("securityLineName", "");
+        doc.put("securityDate", "");
+        doc.put("securityLevel", "");
+        doc.put("securityDetailLevel", "");
+        doc.put("securityDigest", "");
+        doc.put("securityReason", "");
+        doc.put("securityGeneral", "");
+        doc.put("securityDutySituation", "");
+        doc.put("securityUploadFileArr", "");
+        
+        Document res = service.updateDocument(doc, collectionName);
+        if("edit".equals(edit)){
+        	return ResultMsg.getSuccess("修改事故信息成功", res);
+        }else{
+        	return ResultMsg.getSuccess("新增事故信息成功", res);
+        }
+    }
+    /**
+     * 
+     * updateSecurityDoc 通过自定义的业务ID更新一条数据的内容（在原有数据的基础上加安全隐患信息）
+     * @param edit
+     * @param busiId
+     * @param securityLineName
+     * @param securityDate
+     * @param securityLevel
+     * @param securityDetailLevel
+     * @param securityDigest
+     * @param securityReason
+     * @param securityGeneral
+     * @param securityDutySituation
+     * @param collectionName
+     * @param request
+     * @return
+     */
+    @PostMapping("/updateSecurityDoc")
+    public ResultMsg updateSecurityDoc(
+    							String edit,
+    							@RequestParam("busiId") String busiId,
+    							@RequestParam(name = "securityObligationDepart") String securityObligationDepart,
+    							@RequestParam(name = "securityLineName") String securityLineName,
+    							@RequestParam(name = "securityDate") String securityDate,
+    							@RequestParam(name = "securityLevel") String securityLevel,
+    							@RequestParam(name = "securityDetailLevel") String securityDetailLevel,
+    							@RequestParam(name = "securityDigest") String securityDigest,
+                                @RequestParam(name = "securityReason") String securityReason,
+                                @RequestParam(name = "securityGeneral") String securityGeneral,
+                                @RequestParam(name = "securityDutySituation") String securityDutySituation,
+                                @RequestParam(name = "securityUploadFileArr") String securityUploadFileArr,
+                                @RequestParam("collectionName") String collectionName,
+                                HttpServletRequest request) {
+        Document doc = service.findDocumentByBusiId(busiId,collectionName);
+        
+        //事故
+        doc.put("accidentFillState", "");//是否填写详细信息后果，“1”为填写
+        doc.put("accidentObligationDepart", "");
+        doc.put("accidentLineName", "");
+        doc.put("accidentDate", "");
+        doc.put("accidentLevel", "");
+        doc.put("accidentDetailLevel", "");
+        doc.put("accidentDigest", "");
+        doc.put("accidentReason", "");
+        doc.put("accidentGeneral", "");
+        doc.put("accidentDutySituation", "");
+        doc.put("accidentUploadFileArr", "");
+        
+        //故障
+        doc.put("troubleFillState", "");//是否填写详细信息后果，“1”为填写
+    	doc.put("troubleObligationDepart", "");
+//    	doc.put("troubleWorkshop", troubleWorkshop);
+//    	doc.put("troubleWorkarea", troubleWorkarea);
+    	doc.put("troubleLineName", "");
+    	doc.put("troubleDate", "");
+    	doc.put("troubleSite", "");
+    	doc.put("troubleDevice", "");
+    	doc.put("troubleOccurDate", "");
+    	doc.put("troubleRecoverDate", "");
+    	doc.put("troubleDelayMinutes", "");
+    	doc.put("troubleTrainNumber", "");
+    	doc.put("troubleGeneral", "");
+    	doc.put("troubleDisposePass", "");
+    	doc.put("troubleReasonAnalyse", "");
+    	doc.put("troubleMeasure", "");
+    	doc.put("troubleFixDuty", "");
+    	doc.put("troubleCheckSituation", "");
+    	doc.put("troubleRemark", "");
+        doc.put("troubleUploadFileArr", "");
+        
+        //障碍
+        doc.put("obstacleFillState", "");//是否填写详细信息后果，“1”为填写
+    	doc.put("obstacleObligationDepart", "");
+    	doc.put("obstacleDate", "");
+    	doc.put("obstaclePlace", "");
+    	doc.put("obstacleDeviceType", "");
+    	doc.put("obstacleDeviceName", "");
+    	doc.put("obstacleOccurDate", "");
+    	doc.put("obstacleRecoverDate", "");
+    	doc.put("obstacleDelayMinutes", "");
+    	doc.put("obstacleReceiver", "");
+    	doc.put("obstacleDelayCoach", "");
+    	doc.put("obstacleDelayTruck", "");
+    	doc.put("obstacleType", "");
+    	doc.put("obstacleDuty", "");
+    	doc.put("obstaclePhenomenon", "");
+    	doc.put("obstacleReasonAnalyse", "");
+    	doc.put("obstacleMeasure", "");
+    	doc.put("obstacleSuingPeople", "");
+    	doc.put("obstacleSuingDate", "");
+        doc.put("obstacleUploadFileArr", "");
+        
+        //安全隐患
+        doc.put("securityFillState", "1");//是否填写详细信息后果，“1”为填写
+        doc.put("securityObligationDepart", securityObligationDepart);
+        doc.put("securityLineName", securityLineName);
+        doc.put("securityDate", securityDate);
+        doc.put("securityLevel", securityLevel);
+        doc.put("securityDetailLevel", securityDetailLevel);
+        doc.put("securityDigest", securityDigest);
+        doc.put("securityReason", securityReason);
+        doc.put("securityGeneral", securityGeneral);
+        doc.put("securityDutySituation", securityDutySituation);
+        DBObject uploadFile =(DBObject) JSON.parse(securityUploadFileArr);
+        doc.put("securityUploadFileArr", uploadFile);
+        
+        Document res = service.updateDocument(doc, collectionName);
+        if("edit".equals(edit)){
+        	return ResultMsg.getSuccess("修改隐患信息成功", res);
+        }else{
+        	return ResultMsg.getSuccess("新增隐患信息成功", res);
+        }
+    }
+    
+    /**
+     * 通过自定义的业务ID更新一条数据的内容（在原有数据的基础上加故障信息）
+     * @param edit
+     * @param busiId
+     * @param troubleWorkshop
+     * @param troubleWorkarea
+     * @param troubleLineName
+     * @param troubleDate
+     * @param troubleSite
+     * @param troubleDevice
+     * @param troubleOccurDate
+     * @param troubleRecoverDate
+     * @param troubleDelayMinutes
+     * @param troubleTrainNumber
+     * @param troubleGeneral
+     * @param troubleDisposePass
+     * @param troubleReasonAnalyse
+     * @param troubleMeasure
+     * @param troubleFixDuty
+     * @param troubleCheckSituation
+     * @param troubleRemark
+     * @param collectionName
+     * @param request
+     * @return
+     */
+    @PostMapping("/updateTroubleDoc")
+    public ResultMsg updateTroubleDoc(
+    		String edit,
+    		@RequestParam("busiId") String busiId,
+    		@RequestParam(name = "troubleObligationDepart") String troubleObligationDepart,
+//    		@RequestParam(name = "troubleWorkshop") String troubleWorkshop,
+//    		@RequestParam(name = "troubleWorkarea") String troubleWorkarea,
+    		@RequestParam(name = "troubleLineName") String troubleLineName,
+    		@RequestParam(name = "troubleDate") String troubleDate,
+    		@RequestParam(name = "troubleSite") String troubleSite,
+    		@RequestParam(name = "troubleDevice") String troubleDevice,
+    		@RequestParam(name = "troubleOccurDate") String troubleOccurDate,
+    		@RequestParam(name = "troubleRecoverDate") String troubleRecoverDate,
+    		@RequestParam(name = "troubleDelayMinutes") String troubleDelayMinutes,
+    		@RequestParam(name = "troubleTrainNumber") String troubleTrainNumber,
+    		@RequestParam(name = "troubleGeneral") String troubleGeneral,
+    		@RequestParam(name = "troubleDisposePass") String troubleDisposePass,
+    		@RequestParam(name = "troubleReasonAnalyse") String troubleReasonAnalyse,
+    		@RequestParam(name = "troubleMeasure") String troubleMeasure,
+    		@RequestParam(name = "troubleFixDuty") String troubleFixDuty,
+    		@RequestParam(name = "troubleCheckSituation") String troubleCheckSituation,
+    		@RequestParam(name = "troubleRemark") String troubleRemark,
+    		@RequestParam(name = "troubleUploadFileArr") String troubleUploadFileArr,
+    		@RequestParam("collectionName") String collectionName,
+    		HttpServletRequest request) {
+    	Document doc = service.findDocumentByBusiId(busiId,collectionName);
+    	
+    	//事故
+        doc.put("accidentFillState", "");//是否填写详细信息后果，“1”为填写
+        doc.put("accidentObligationDepart", "");
+        doc.put("accidentLineName", "");
+        doc.put("accidentDate", "");
+        doc.put("accidentLevel", "");
+        doc.put("accidentDetailLevel", "");
+        doc.put("accidentDigest", "");
+        doc.put("accidentReason", "");
+        doc.put("accidentGeneral", "");
+        doc.put("accidentDutySituation", "");
+        doc.put("accidentUploadFileArr", "");
+    	
+        //故障
+        doc.put("troubleFillState", "1");//是否填写详细信息后果，“1”为填写
+    	doc.put("troubleObligationDepart", troubleObligationDepart);
+//    	doc.put("troubleWorkshop", troubleWorkshop);
+//    	doc.put("troubleWorkarea", troubleWorkarea);
+    	doc.put("troubleLineName", troubleLineName);
+    	doc.put("troubleDate", troubleDate);
+    	doc.put("troubleSite", troubleSite);
+    	doc.put("troubleDevice", troubleDevice);
+    	doc.put("troubleOccurDate", troubleOccurDate);
+    	doc.put("troubleRecoverDate", troubleRecoverDate);
+    	doc.put("troubleDelayMinutes", troubleDelayMinutes);
+    	doc.put("troubleTrainNumber", troubleTrainNumber);
+    	doc.put("troubleGeneral", troubleGeneral);
+    	doc.put("troubleDisposePass", troubleDisposePass);
+    	doc.put("troubleReasonAnalyse", troubleReasonAnalyse);
+    	doc.put("troubleMeasure", troubleMeasure);
+    	doc.put("troubleFixDuty", troubleFixDuty);
+    	doc.put("troubleCheckSituation", troubleCheckSituation);
+    	doc.put("troubleRemark", troubleRemark);
+    	DBObject uploadFile =(DBObject) JSON.parse(troubleUploadFileArr);
+        doc.put("troubleUploadFileArr", uploadFile);
+        
+        //障碍
+        doc.put("obstacleFillState", "");//是否填写详细信息后果，“1”为填写
+    	doc.put("obstacleObligationDepart", "");
+    	doc.put("obstacleDate", "");
+    	doc.put("obstaclePlace", "");
+    	doc.put("obstacleDeviceType", "");
+    	doc.put("obstacleDeviceName", "");
+    	doc.put("obstacleOccurDate", "");
+    	doc.put("obstacleRecoverDate", "");
+    	doc.put("obstacleDelayMinutes", "");
+    	doc.put("obstacleReceiver", "");
+    	doc.put("obstacleDelayCoach", "");
+    	doc.put("obstacleDelayTruck", "");
+    	doc.put("obstacleType", "");
+    	doc.put("obstacleDuty", "");
+    	doc.put("obstaclePhenomenon", "");
+    	doc.put("obstacleReasonAnalyse", "");
+    	doc.put("obstacleMeasure", "");
+    	doc.put("obstacleSuingPeople", "");
+    	doc.put("obstacleSuingDate", "");
+        doc.put("obstacleUploadFileArr", "");
+        
+        //安全隐患
+        doc.put("securityFillState", "");//是否填写详细信息后果，“1”为填写
+        doc.put("securityObligationDepart", "");
+        doc.put("securityLineName", "");
+        doc.put("securityDate", "");
+        doc.put("securityLevel", "");
+        doc.put("securityDetailLevel", "");
+        doc.put("securityDigest", "");
+        doc.put("securityReason", "");
+        doc.put("securityGeneral", "");
+        doc.put("securityDutySituation", "");
+        doc.put("securityUploadFileArr", "");
+        
+    	Document res = service.updateDocument(doc, collectionName);
+    	if("edit".equals(edit)){
+    		return ResultMsg.getSuccess("修改故障信息成功", res);
+    	}else{
+    		return ResultMsg.getSuccess("新增故障信息成功", res);
+    	}
+    }
+    /**
+     * 通过自定义的业务ID更新一条数据的内容（在原有数据的基础上加障碍信息）
+     * @param edit
+     * @param busiId
+     * @param obstacleDate
+     * @param obstaclePlace
+     * @param obstacleDeviceType
+     * @param obstacleDeviceName
+     * @param obstacleOccurDate
+     * @param obstacleRecoverDate
+     * @param obstacleDelayMinutes
+     * @param obstacleReceiver
+     * @param obstacleDelayCoach
+     * @param obstacleDelayTruck
+     * @param obstacleType
+     * @param obstacleDuty
+     * @param obstaclePhenomenon
+     * @param obstacleReasonAnalyse
+     * @param obstacleMeasure
+     * @param obstacleSuingPeople
+     * @param obstacleSuingDate
+     * @param collectionName
+     * @param request
+     * @return
+     */
+    @PostMapping("/updateObstacleDoc")
+    public ResultMsg updateObstacleDoc(
+    		String edit,
+    		@RequestParam("busiId") String busiId,
+    		@RequestParam(name = "obstacleObligationDepart") String obstacleObligationDepart,
+    		@RequestParam(name = "obstacleDate") String obstacleDate,
+    		@RequestParam(name = "obstaclePlace") String obstaclePlace,
+    		@RequestParam(name = "obstacleDeviceType") String obstacleDeviceType,
+    		@RequestParam(name = "obstacleDeviceName") String obstacleDeviceName,
+    		@RequestParam(name = "obstacleOccurDate") String obstacleOccurDate,
+    		@RequestParam(name = "obstacleRecoverDate") String obstacleRecoverDate,
+    		@RequestParam(name = "obstacleDelayMinutes") String obstacleDelayMinutes,
+    		@RequestParam(name = "obstacleReceiver") String obstacleReceiver,
+    		@RequestParam(name = "obstacleDelayCoach") String obstacleDelayCoach,
+    		@RequestParam(name = "obstacleDelayTruck") String obstacleDelayTruck,
+    		@RequestParam(name = "obstacleType") String obstacleType,
+    		@RequestParam(name = "obstacleDuty") String obstacleDuty,
+    		@RequestParam(name = "obstaclePhenomenon") String obstaclePhenomenon,
+    		@RequestParam(name = "obstacleReasonAnalyse") String obstacleReasonAnalyse,
+    		@RequestParam(name = "obstacleMeasure") String obstacleMeasure,
+    		@RequestParam(name = "obstacleSuingPeople") String obstacleSuingPeople,
+    		@RequestParam(name = "obstacleSuingDate") String obstacleSuingDate,
+    		@RequestParam(name = "obstacleUploadFileArr") String obstacleUploadFileArr,
+    		@RequestParam("collectionName") String collectionName,
+    		HttpServletRequest request) {
+    	Document doc = service.findDocumentByBusiId(busiId,collectionName);
+    	
+    	//事故
+        doc.put("accidentFillState", "");//是否填写详细信息后果，“1”为填写
+        doc.put("accidentObligationDepart", "");
+        doc.put("accidentLineName", "");
+        doc.put("accidentDate", "");
+        doc.put("accidentLevel", "");
+        doc.put("accidentDetailLevel", "");
+        doc.put("accidentDigest", "");
+        doc.put("accidentReason", "");
+        doc.put("accidentGeneral", "");
+        doc.put("accidentDutySituation", "");
+        doc.put("accidentUploadFileArr", "");
+        
+        //故障
+        doc.put("troubleFillState", "");//是否填写详细信息后果，“1”为填写
+    	doc.put("troubleObligationDepart", "");
+//    	doc.put("troubleWorkshop", troubleWorkshop);
+//    	doc.put("troubleWorkarea", troubleWorkarea);
+    	doc.put("troubleLineName", "");
+    	doc.put("troubleDate", "");
+    	doc.put("troubleSite", "");
+    	doc.put("troubleDevice", "");
+    	doc.put("troubleOccurDate", "");
+    	doc.put("troubleRecoverDate", "");
+    	doc.put("troubleDelayMinutes", "");
+    	doc.put("troubleTrainNumber", "");
+    	doc.put("troubleGeneral", "");
+    	doc.put("troubleDisposePass", "");
+    	doc.put("troubleReasonAnalyse", "");
+    	doc.put("troubleMeasure", "");
+    	doc.put("troubleFixDuty", "");
+    	doc.put("troubleCheckSituation", "");
+    	doc.put("troubleRemark", "");
+        doc.put("troubleUploadFileArr", "");
+    	
+        //障碍
+        doc.put("obstacleFillState", "1");//是否填写详细信息后果，“1”为填写
+    	doc.put("obstacleObligationDepart", obstacleObligationDepart);
+    	doc.put("obstacleDate", obstacleDate);
+    	doc.put("obstaclePlace", obstaclePlace);
+    	doc.put("obstacleDeviceType", obstacleDeviceType);
+    	doc.put("obstacleDeviceName", obstacleDeviceName);
+    	doc.put("obstacleOccurDate", obstacleOccurDate);
+    	doc.put("obstacleRecoverDate", obstacleRecoverDate);
+    	doc.put("obstacleDelayMinutes", obstacleDelayMinutes);
+    	doc.put("obstacleReceiver", obstacleReceiver);
+    	doc.put("obstacleDelayCoach", obstacleDelayCoach);
+    	doc.put("obstacleDelayTruck", obstacleDelayTruck);
+    	doc.put("obstacleType", obstacleType);
+    	doc.put("obstacleDuty", obstacleDuty);
+    	doc.put("obstaclePhenomenon", obstaclePhenomenon);
+    	doc.put("obstacleReasonAnalyse", obstacleReasonAnalyse);
+    	doc.put("obstacleMeasure", obstacleMeasure);
+    	doc.put("obstacleSuingPeople", obstacleSuingPeople);
+    	doc.put("obstacleSuingDate", obstacleSuingDate);
+    	DBObject uploadFile =(DBObject) JSON.parse(obstacleUploadFileArr);
+        doc.put("obstacleUploadFileArr", uploadFile);
+        
+        //安全隐患
+        doc.put("securityFillState", "");//是否填写详细信息后果，“1”为填写
+        doc.put("securityObligationDepart", "");
+        doc.put("securityLineName", "");
+        doc.put("securityDate", "");
+        doc.put("securityLevel", "");
+        doc.put("securityDetailLevel", "");
+        doc.put("securityDigest", "");
+        doc.put("securityReason", "");
+        doc.put("securityGeneral", "");
+        doc.put("securityDutySituation", "");
+        doc.put("securityUploadFileArr", "");
+        
+    	Document res = service.updateDocument(doc, collectionName);
+    	if("edit".equals(edit)){
+    		return ResultMsg.getSuccess("修改障碍信息成功", res);
+    	}else{
+    		return ResultMsg.getSuccess("新增障碍信息成功", res);
+    	}
+    }
+    
+    @GetMapping("/download")
+    public void downLoad(@RequestParam String path, @RequestParam String fileName, HttpServletRequest request, HttpServletResponse response) {
+        File fileLoad = new File(path);
+        try {
+            fileName = urlEncoder(request, fileName);
+            request.setCharacterEncoding("UTF-8");
+            response.setContentType("text/html;charset=UTF-8");
+            response.setContentType("binary/octet-stream");
+            response.setHeader("Content-disposition", "attachment; fileName = " + fileName);
+            FileInputStream in = new FileInputStream(fileLoad);
+            OutputStream out = response.getOutputStream();
+            byte[] buffer = new byte[2048];
+            int n = -1;
+            while ((n = in.read(buffer)) != -1) {
+                out.write(buffer, 0, n);
+            }
+            out.close();
+            in.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+    
+    /**
+     * urlEncoder 防止附件中文乱码
+     *
+     * @param request
+     * @param fileName
+     * @return
+     */
+    public static String urlEncoder(HttpServletRequest request, String fileName) {
+        try {
+            // 将字母全部转化为大写，判断是否存在RV字符串
+            if (request.getHeader("User-Agent").toUpperCase().indexOf("RV") > 0) {
+                // 处理IE 的头部信息
+                fileName = URLEncoder.encode(fileName, "UTF-8");// 对字符串进行URL加码，中文字符变成%+16进制
+            } else {
+                // 处理其他的头部信息
+                fileName = new String(fileName.substring(fileName.lastIndexOf("/") + 1).getBytes("UTF-8"), "ISO8859-1");
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return fileName;
+    }
+}

@@ -1,0 +1,12 @@
+package com.enovell.yunwei.km_micor_service;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class KmMicorServiceApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(KmMicorServiceApplication.class, args);
+    }
+}

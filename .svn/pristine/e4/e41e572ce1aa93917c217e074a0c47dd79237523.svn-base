@@ -1,0 +1,150 @@
+/**
+ * 普铁年月报表-车间编制界面 车间详情/汇总
+ */
+define("yearMonthPlan/yearMonthPuTie/compile/WorkShopPuTieYearMonthAttach",[
+	'bui/overlay','bui/data',
+	'common/data/PostLoad',
+	'common/grid/GridBtn'
+	],function(require){
+	var Overlay = require('bui/overlay'),Data = require('bui/data'),
+	PostLoad = require('common/data/PostLoad'),
+	GridBtn = require('common/grid/GridBtn');
+	
+	var WorkShopPuTieYearMonthAttach = Overlay.Dialog.extend({
+		initializer:function(){
+			var _self=this;	
+			_self.addChild(_self._initSearchGrid());
+		},
+		renderUI:function(){
+			var _self=this;	
+			//重写 buttons
+			_self.set("buttons",[]);
+		},
+		bindUI : function(){
+			var _self=this,editGrid = _self.getChild('editGrid'),store=_self.get('store');
+			store.load();
+			$('.updateGatherStatus').on('click',function(){
+				store.load();
+			});
+			editGrid.on("itemclick",function(e){
+				var target = $(e.domTarget);
+				var id = _self.get('id');
+				var filePath = _self.get('filePath');
+				//详情
+				if(target.hasClass('detail')){
+					var tempv = window.open("kmms/common/loading.html");
+					tempv.location.href = '/pageoffice/openPage?filePath=' + filePath + e.item.filePath;
+				}
+				//车间汇总
+				if(target.hasClass('workShopGather')){
+					var postLoad = new PostLoad({
+						el:_self.get('el'),
+						url:'/kmms/yearMonthPutieAnysisAction/anysisWorkShop.cn',
+					});
+					postLoad.load({
+						attachPath:e.item.attachType,
+						ids : id,
+						userString:JSON.stringify(_self.get('user'))
+						},function(result){
+						if(result.status=='1'){
+							var tempv = window.open("kmms/common/loading.html");
+							tempv.location.href = '/pageoffice/openPage?filePath=' + filePath + result.data;
+						}
+					});
+				}
+			});
+		},
+		_initSearchGrid : function(){
+			var _self = this;
+			var isWorkShopGather = _self.get('isWorkShopGather');
+			var store = new Data.Store({
+				url : "/kmms/yearMonthPuTieGQAction/getAttachDataByCJId.cn",
+				proxy : {
+					method : 'post',
+					dataType : 'json'
+				},
+				params : {id:_self.get('id')},
+			});
+			_self.set('store',store);
+			var columns = [{
+				title : '年月表名称',
+				dataIndex : 'reportName',
+				elCls : 'center',
+				width : '42%'
+			},{
+				title : '汇总状态',
+				dataIndex : 'filePath',
+				elCls : 'center',
+				width : '13%',
+				renderer:function(value){
+					if(value!=null){
+						return "已汇总"
+					}else{
+						return "未汇总";
+					}
+				},
+			},{
+				title : '工区填报比例',
+				dataIndex : 'reportPecent',
+				elCls : 'center',
+				width : '15%',
+				renderer:function(value){
+					if(value!=null){
+						return value;
+					}else{
+						return "";
+					}
+				},
+			},{
+				title:'操作',
+				elCls : 'center',
+				dataIndex : 'filePath',
+				width: '30%',
+				renderer:function(value,obj){
+					var detail = '<span id="attachDetail" class="grid-command detail">详情</span>';
+					var gather = '<span id="workShopGather" class="grid-command workShopGather">汇总</span>&nbsp;';
+					var result = "";
+					if(isWorkShopGather&&obj.hasReport==0){
+						return '<span>没有报表数据可以汇总</span>';
+					}
+					if(isWorkShopGather&&obj.hasReport!=0){
+						result =  gather;
+					}
+					if(value!=null){
+						result = result+detail;
+					}
+					 return result;
+				},
+			}];
+			var editGrid = new GridBtn({
+				id : 'editGrid',
+				columns : columns,
+				store : store,
+				width : '100%',
+				height: 245,
+				paging : false,
+				loadMask : true,
+				tbar: { 
+					items : [{
+						btnCls : 'button button-small updateGatherStatus',
+						text : '<i class="icon-refresh"></i>更新汇总状态'
+					}]
+				}
+			});
+			return editGrid;
+		}
+	},{
+		ATTRS:{
+			closeAction:{value:"destroy"},//关闭dialog时销毁该窗口
+			id : {},//车间业务数据id
+			title:{},
+			filePath:{},
+			user:{},
+			width:{value:700},//宽度
+			isWorkShopGather:{value:false},//是否是车间汇总弹出框
+			elAttrs : {value: {id : 'WorkShopPuTieYearMonthAttach'}},
+			mask : {value : true},//非模态弹出框
+		}		
+	});
+	return WorkShopPuTieYearMonthAttach;
+});

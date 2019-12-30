@@ -1,0 +1,87 @@
+/**
+ * 目录及文件列表上单行，包括上下两部分
+ * 上面部分为首次渲染时隐藏的路径
+ * 下面部分为目录及文件名
+ * 
+ * @author roysong
+ * @date 190518
+ */
+define('kmms/integratedManage/fileShare/fileItem',
+		['bui/common','bui/data','bui/list','bui/toolbar',
+		'kmms/integratedManage/fileShare/fileRow'
+		],
+		function(r){
+	var BUI = r('bui/common'),
+    Data = r('bui/data'),
+    List = r('bui/list'),
+    Toolbar = r('bui/toolbar'),
+    FileRow = r('kmms/integratedManage/fileShare/fileRow');
+	var fileItem = List.ListItem.extend({
+		initializer : function(){
+			var _self = this,item = _self.get('item'),store = new Data.Store({data : item.nav});
+			var topNav = new Toolbar.Breadcrumb({
+				id : 'itemNav',
+				elStyle : {'background-color': '#eeeeee','font-size': 'smaller','padding':'0'},
+				elCls : 'fileAndDicNav',
+				store : store
+			});
+			topNav.hide();//文件列表上的所属路径默认隐藏，只在模糊查询时才打开
+			_self.addChild(topNav);
+			var fileRow = new FileRow({
+				item : item,
+				perId : _self.get('perId'),
+				userId : _self.get('userId'),
+				orgId : _self.get('orgId'),
+				orgName : _self.get('orgName'),
+				collectionName : _self.get('collectionName'),
+				buttonVisible : _self.get('buttonVisible')
+			});
+			_self.addChild(fileRow);
+		},
+		renderUI : function(){
+			var _self = this,nav = _self.getChild('itemNav'),navEl = nav.get('el');
+			navEl.find('.breadcrumb').css('padding','0');
+		},
+		bindUI : function(){
+			var _self = this,nav = _self.getChild('itemNav');
+			// 点击路径上的目录进入指定目录
+			nav.on('jumpToDirectory',function(e){
+				_self.fire('enterDirectory',e.dic);
+			});
+		},
+		/**
+		 * 打开隐藏的文件所属路径
+		 */
+		showNav : function(){
+			var _self = this,nav = _self.getChild('itemNav');
+			nav.show();
+		}
+	},{
+		ATTRS : {
+			/**
+			 * 当前权限ID
+			 */
+            perId : {},
+            /**
+			 * 当前用户Id
+			 */
+            userId : {},// 登录用户ID
+            orgId : {},// 登录用户组织机构ID
+            orgName : {},// 登录用户组织机构名称
+            collectionName : {},
+            buttonVisible : {view : true},
+            item : {view : true},
+            tpl : {view: true,value : '<div class="dicAndFile" style="border-bottom:1px dashed royalblue"></div>'},
+            childContainer : {value : '.dicAndFile'},
+            events : {
+				value : {
+					'enterDirectory' : true,
+					'dicEditOver' : true,
+					'dicDelOver' : true,
+					'fileDelOver' : true,
+				}
+            }
+		}
+	});
+	return fileItem;
+});

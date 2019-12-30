@@ -1,0 +1,310 @@
+package com.enovell.yunwei.km_micor_service.action.dayToJobManageAction;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
+
+import org.apache.commons.lang.StringUtils;
+import org.bson.Document;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.enovell.yunwei.km_micor_service.dto.GridDto;
+import com.enovell.yunwei.km_micor_service.dto.ResultMsg;
+import com.enovell.yunwei.km_micor_service.service.UserService;
+import com.enovell.yunwei.km_micor_service.service.dayToJobManageService.PointOuterMaintainApproveService;
+import com.mongodb.DBObject;
+import com.mongodb.util.JSON;
+
+@RestController
+@RequestMapping("/pointOuterMaintainApproveAction")
+public class PointOuterMaintainApproveAction {
+	@Resource(name = "pointOuterMaintainApproveService")
+    private PointOuterMaintainApproveService service;
+    @Resource(name = "userService")
+    private UserService userService;
+    /**
+     * 查询一条记录
+     * @param id
+     * @param collectionName
+     * @return
+     */
+    @PostMapping("/findById")
+    public ResultMsg findDocById(@RequestParam("id") String id,
+                                 @RequestParam("collectionName") String collectionName) {
+        Document res = service.findDocumentById(id, collectionName);
+        return ResultMsg.getSuccess("查询完成", res);
+    }
+    /**
+     * 主页显示
+     * @param collectionName
+     * @param name
+     * @param startUploadDate
+     * @param endUploadDate
+     * @param auditStatus
+     * @param orgId
+     * @param start
+     * @param limit
+     * @return
+     */
+    @PostMapping("/findAll")
+    public GridDto<Document> findAll(@RequestParam String collectionName,
+									 @RequestParam String userId,
+									 @RequestParam String orgId,
+									 String unitName,
+									 String unitId,
+									 String unitType,
+									 String lineName,
+									 String lineType,
+									 String flowState,
+                                     String startUploadDate,
+                                     String endUploadDate,
+                                     @RequestParam int start, @RequestParam int limit) {
+        SimpleDateFormat sdfDay = new SimpleDateFormat("yyyy-MM-dd");
+        Date currentDate = new Date();
+        String currentDay = "";
+        GridDto<Document> result = new GridDto<>();
+        currentDay = sdfDay.format(currentDate);
+        result.setResults(service.findAllDocumentCount(collectionName, userId, orgId, unitName, unitId, unitType, lineName, lineType, flowState, currentDay, startUploadDate, endUploadDate));
+        result.setRows(service.findAllDocument(collectionName, userId, orgId, unitName, unitId, unitType, lineName, lineType, flowState, currentDay, startUploadDate, endUploadDate, start, limit));
+        return result;
+    }
+    /**
+     * 审批（段调度）
+     * @param id 查询主键
+     * @param approverName 审批人名称
+     * @param approverId 审批人ID
+     * @param approverOrgId 审批人组织机构ID
+     * @param approverOrgName 审批人组织机构名称
+     * @param approveResult 审批结果
+     * @param approveRemark 审批意见
+     * @param flowState 流程状态
+     * @param collectionName 数据表名
+     * @param request
+     * @return ResultMsg
+     */
+    @PostMapping("/updateDocAndContent")
+    public ResultMsg updateDocAndContent( 
+    		@RequestParam("id") String id,
+    		@RequestParam(name = "unit") String unit,
+			@RequestParam(name = "serial") String serial,
+			@RequestParam(name = "workTimeStart") String workTimeStart,
+			@RequestParam(name = "workTimeEnd") String workTimeEnd,
+			@RequestParam(name = "lineType") String lineType,
+			@RequestParam(name = "lineName") String lineName,
+            @RequestParam(name = "section") String section,
+            @RequestParam(name = "station") String station,
+            @RequestParam(name = "workPrincipal") String workPrincipal,
+            @RequestParam(name = "phone") String phone,
+//            @RequestParam(name = "attendPeople") String attendPeople,
+//            @RequestParam(name = "louver") String louver,
+            @RequestParam(name = "workContentRange") String workContentRange,
+            @RequestParam(name = "workOrgCondition") String workOrgCondition,
+            @RequestParam(name = "localeDefendMeasure") String localeDefendMeasure,
+            @RequestParam(name = "relevantDemand") String relevantDemand,
+//            @RequestParam(name = "workPrepareCarry") String workPrepareCarry,
+//            @RequestParam(name = "peopleWorkSiteBackWay") String peopleWorkSiteBackWay,
+//            @RequestParam(name = "workPeopleDivision") String workPeopleDivision,
+//            @RequestParam(name = "safeguardDivision") String safeguardDivision,
+//            @RequestParam(name = "dredgeSkillCondition") String dredgeSkillCondition,
+//            @RequestParam(name = "safetyAttentionMatter") String safetyAttentionMatter,
+            @RequestParam(name = "uploadFileArr") String uploadFileArr,
+            String auditAdvice,
+            String approveAdvice,
+    		@RequestParam(name = "userName") String approverName,
+    		@RequestParam(name = "userId") String approverId,
+    		@RequestParam(name = "orgId") String approverOrgId,
+    		@RequestParam(name = "orgName") String approverOrgName,
+    		@RequestParam(name = "approveResult") String approveResult,
+    		@RequestParam(name = "approveRemark") String approveRemark,
+    		@RequestParam(name = "flowState") String flowState,
+    		@RequestParam(name = "collectionName") String collectionName,
+    		HttpServletRequest request) {
+    	SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    	String approveDate = "";
+    	try {
+    		approveDate = sdf.format(new Date());
+    	} catch (Exception e) {
+    		e.printStackTrace();
+    	}
+    	
+    	Document document = service.findDocumentById(id,collectionName);
+    	
+    	document.put("unit", unit);
+        document.put("serial", serial);
+        document.put("workTime", workTimeStart+"-"+workTimeEnd.substring(11,19));
+        document.put("workTimeStart", workTimeStart);
+        document.put("workTimeEnd", workTimeEnd);
+        document.put("lineType", lineType);
+        document.put("lineName", lineName);
+        document.put("section", section);
+        document.put("station", station);
+        document.put("workPrincipal", workPrincipal);
+        document.put("phone", phone);
+//        document.put("attendPeople", attendPeople);
+//        document.put("louver", louver);
+        document.put("workContentRange", workContentRange);
+        document.put("workOrgCondition", workOrgCondition);
+        document.put("localeDefendMeasure", localeDefendMeasure);
+        document.put("relevantDemand", relevantDemand);
+//        document.put("workPrepareCarry", workPrepareCarry);
+//        document.put("peopleWorkSiteBackWay", peopleWorkSiteBackWay);
+//        document.put("workPeopleDivision", workPeopleDivision);
+//        document.put("safeguardDivision", safeguardDivision);
+//        document.put("dredgeSkillCondition", dredgeSkillCondition);
+//        document.put("safetyAttentionMatter", safetyAttentionMatter);
+        
+        DBObject uploadFile =(DBObject) JSON.parse(uploadFileArr);
+        document.put("uploadFileArr", uploadFile);
+    	
+    	document.put("approverId", approverId);
+    	document.put("approver", approverName);
+    	document.put("approveDate", approveDate);
+    	document.put("approverOrgId", approverOrgId);
+    	document.put("approverOrgName", approverOrgName);
+    	
+    	if("1".equals(approveResult)){//TODO 有大部分相同类型代码 待重构
+    		if(StringUtils.isNotBlank(approveRemark)){
+    			document.put("approveAdvice", "审批通过："+approveRemark);
+    		}else{
+    			document.put("approveAdvice", "审批通过");
+    		}
+    	}
+    	if("0".equals(approveResult)){
+    		if(StringUtils.isNotBlank(approveRemark)){
+    			document.put("approveAdvice", "审批不通过："+approveRemark);
+    		}else{
+    			document.put("approveAdvice", "审批不通过");
+    		}
+    	}
+    	document.put("flowState", flowState);
+    	Document res = service.updateDocument(document, collectionName);
+    	return ResultMsg.getSuccess("审批成功", res);
+    }
+    /**
+     * 审批（段调度）
+     * @param id 查询主键
+     * @param approverName 审批人名称
+     * @param approverId 审批人ID
+     * @param approverOrgId 审批人组织机构ID
+     * @param approverOrgName 审批人组织机构名称
+     * @param approveResult 审批结果
+     * @param approveRemark 审批意见
+     * @param flowState 流程状态
+     * @param collectionName 数据表名
+     * @param request
+     * @return ResultMsg
+     */
+    @PostMapping("/updateDoc")
+    public ResultMsg updateDoc( 
+    		@RequestParam("id") String id,
+    		@RequestParam(name = "userName") String approverName,
+    		@RequestParam(name = "userId") String approverId,
+			@RequestParam(name = "orgId") String approverOrgId,
+			@RequestParam(name = "orgName") String approverOrgName,
+            @RequestParam(name = "approveResult") String approveResult,
+            @RequestParam(name = "approveRemark") String approveRemark,
+            @RequestParam(name = "flowState") String flowState,
+            @RequestParam(name = "collectionName") String collectionName,
+                               HttpServletRequest request) {
+    	SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    	String approveDate = "";
+    	 try {
+    		 approveDate = sdf.format(new Date());
+         } catch (Exception e) {
+        	 e.printStackTrace();
+         }
+    	
+        Document document = service.findDocumentById(id,collectionName);
+        document.put("approverId", approverId);
+        document.put("approver", approverName);
+        document.put("approveDate", approveDate);
+        document.put("approverOrgId", approverOrgId);
+        document.put("approverOrgName", approverOrgName);
+        
+        if("1".equals(approveResult)){//TODO 有大部分相同类型代码 待重构
+        	if(StringUtils.isNotBlank(approveRemark)){
+        		document.put("approveAdvice", "审批通过："+approveRemark);
+        	}else{
+        		document.put("approveAdvice", "审批通过");
+        	}
+        }
+        if("0".equals(approveResult)){
+        	if(StringUtils.isNotBlank(approveRemark)){
+        		document.put("approveAdvice", "审批不通过："+approveRemark);
+        	}else{
+        		document.put("approveAdvice", "审批不通过");
+        	}
+        }
+        document.put("flowState", flowState);
+        Document res = service.updateDocument(document, collectionName);
+        return ResultMsg.getSuccess("审批成功", res);
+    }
+    
+    @PostMapping("/updateContent")
+    public ResultMsg updateContent( 
+    		@RequestParam("id") String id,
+    		@RequestParam(name = "unit") String unit,
+			@RequestParam(name = "serial") String serial,
+			@RequestParam(name = "workTimeStart") String workTimeStart,
+			@RequestParam(name = "workTimeEnd") String workTimeEnd,
+			@RequestParam(name = "lineType") String lineType,
+			@RequestParam(name = "lineName") String lineName,
+            @RequestParam(name = "section") String section,
+            @RequestParam(name = "station") String station,
+            @RequestParam(name = "workPrincipal") String workPrincipal,
+            @RequestParam(name = "phone") String phone,
+//            @RequestParam(name = "attendPeople") String attendPeople,
+//            @RequestParam(name = "louver") String louver,
+            @RequestParam(name = "workContentRange") String workContentRange,
+            @RequestParam(name = "workOrgCondition") String workOrgCondition,
+            @RequestParam(name = "localeDefendMeasure") String localeDefendMeasure,
+            @RequestParam(name = "relevantDemand") String relevantDemand,
+//            @RequestParam(name = "workPrepareCarry") String workPrepareCarry,
+//            @RequestParam(name = "peopleWorkSiteBackWay") String peopleWorkSiteBackWay,
+//            @RequestParam(name = "workPeopleDivision") String workPeopleDivision,
+//            @RequestParam(name = "safeguardDivision") String safeguardDivision,
+//            @RequestParam(name = "dredgeSkillCondition") String dredgeSkillCondition,
+//            @RequestParam(name = "safetyAttentionMatter") String safetyAttentionMatter,
+            @RequestParam(name = "uploadFileArr") String uploadFileArr,
+            @RequestParam(name = "collectionName") String collectionName,
+            String auditAdvice,
+            String approveAdvice,
+            HttpServletRequest request) {
+        Document document = service.findDocumentById(id,collectionName);
+        document.put("unit", unit);
+        document.put("serial", serial);
+        document.put("workTime", workTimeStart+"-"+workTimeEnd.substring(11,19));
+        document.put("workTimeStart", workTimeStart);
+        document.put("workTimeEnd", workTimeEnd);
+        document.put("lineType", lineType);
+        document.put("lineName", lineName);
+        document.put("section", section);
+        document.put("station", station);
+        document.put("workPrincipal", workPrincipal);
+        document.put("phone", phone);
+//        document.put("attendPeople", attendPeople);
+//        document.put("louver", louver);
+        document.put("workContentRange", workContentRange);
+        document.put("workOrgCondition", workOrgCondition);
+        document.put("localeDefendMeasure", localeDefendMeasure);
+        document.put("relevantDemand", relevantDemand);
+//        document.put("workPrepareCarry", workPrepareCarry);
+//        document.put("peopleWorkSiteBackWay", peopleWorkSiteBackWay);
+//        document.put("workPeopleDivision", workPeopleDivision);
+//        document.put("safeguardDivision", safeguardDivision);
+//        document.put("dredgeSkillCondition", dredgeSkillCondition);
+//        document.put("safetyAttentionMatter", safetyAttentionMatter);
+        
+        DBObject uploadFile =(DBObject) JSON.parse(uploadFileArr);
+        document.put("uploadFileArr", uploadFile);
+        
+        Document res = service.updateDocument(document, collectionName);
+        return ResultMsg.getSuccess("修改成功", res);
+    }
+    
+}

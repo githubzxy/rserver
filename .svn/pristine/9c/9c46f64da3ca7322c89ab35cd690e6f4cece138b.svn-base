@@ -1,0 +1,92 @@
+package com.enovell.yunwei.km_micor_service.service.productionManage.maintenanceMemorendun;
+
+import java.util.Date;
+import java.util.List;
+
+import org.bson.Document;
+import org.springframework.web.multipart.MultipartFile;
+
+import com.enovell.yunwei.km_micor_service.dto.GridDto;
+import com.enovell.yunwei.km_micor_service.dto.productManage.MaintenanceMemorendunDto;
+
+public interface MaintenanceMemorendunService {
+
+	/**
+	 * 
+	 * addDocument 添加维修备忘录
+	 * @param document
+	 * @param collectionName
+	 * @return
+	 */
+	Document addDocument(Document document, String collectionName);
+	/**
+	 * 
+	 * findAllDocumentCount 根据条件查询维修备忘录总数
+	 * @param collectionName
+	 * @param name
+	 * @param startDate
+	 * @param endDate2
+	 * @param orgId
+	 * @param auditStatus
+	 * @param dutyDepartment 
+	 * @return
+	 */
+	Long findAllDocumentCount(String collectionName, String name, String startDate, String endDate2, String orgId,
+			String auditStatus, String dutyDepartment);
+	/**
+	 * 
+	 * findAllDocument 根据条件查询维修备忘录信息
+	 * @param collectionName
+	 * @param name
+	 * @param startDate
+	 * @param endDate2
+	 * @param orgId
+	 * @param start
+	 * @param limit
+	 * @param auditStatus
+	 * @return
+	 */
+	List<Document> findAllDocument(String collectionName, String name, String startDate, String endDate2, String orgId,
+			int start, int limit, String auditStatus, String dutyDepartment);
+
+	/**
+	 * 
+	 * findDocumentById 根据id查询维修备忘录
+	 * @param id
+	 * @param collectionName
+	 * @return
+	 */
+	Document findDocumentById(String id, String collectionName);
+	/**
+	 * 
+	 * modifyDocument 修改维修备忘录信息
+	 * @param document
+	 * @param collectionName
+	 * @return
+	 */
+	Document modifyDocument(Document document, String collectionName);
+	/**
+	 * 
+	 * getExcelInfo 读取excel信息
+	 * @param file
+	 * @return
+	 */
+	List<MaintenanceMemorendunDto> getExcelInfo(MultipartFile file);
+
+	/**
+	 * 
+	 * uploadFile 上传文件
+	 * @param files
+	 * @return
+	 */
+	List<Document> uploadFile(List<MultipartFile> files);
+	/**
+	 * checkData 检查时间格式是否正确
+	 * @param result
+	 * @param checkDate
+	 * @param endDate
+	 * @return
+	 */
+	boolean checkData(GridDto<Document> result, String checkDate, String endDate);
+
+}

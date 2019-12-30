@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>电路工单查询</title>
+    <link rel="stylesheet" th:href="@{/bui/css/bs3/dpl.css}" />
+    <link rel="stylesheet" th:href="@{/bui/css/bs3/bui.css}" />
+    <link rel="stylesheet" th:href="@{/common/uploader/uploader.css}" />
+    <script charset="utf-8" th:src="@{/common/sq.js}"></script>
+</head>
+<body>
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    seajs.config({
+        paths : {
+            common : "/common",
+            kmms : "/kmms",
+            bui : "/bui"
+        }
+    });
+    seajs.use('kmms/productionManage/circuitWorkOrderManage/circuitWorkOrderQuery/circuitWorkOrderQueryPage',function(Main){
+    	var main = new Main({
+        	perId : [[${perId}]],
+        	userId : [[${userId}]],
+        	userName : [[${userName}]],
+        	orgId : [[${orgId}]],
+        	orgName : [[${orgName}]],
+        	parentId : [[${parentId}]]})
+        main.render();
+    });
+    /*]]>*/
+</script>
+</body>
+</html>

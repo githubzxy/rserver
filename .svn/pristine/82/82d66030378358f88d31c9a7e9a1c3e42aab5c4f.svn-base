@@ -1,0 +1,284 @@
+package com.enovell.yunwei.km_micor_service.action.yearMonthPlan;
+
+import java.util.Arrays;
+import java.util.List;
+
+import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
+
+import org.apache.commons.lang.StringUtils;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import com.enovell.yunwei.enocommon.dto.ResultMsg;
+import com.enovell.yunwei.enocommon.utils.JsonUtil;
+import com.enovell.yunwei.km_micor_service.dto.yearMonthPlan.YearMonthOperStatus;
+import com.enovell.yunwei.km_micor_service.dto.yearMonthPlan.dto.YearMonthWorkAreaDto;
+import com.enovell.yunwei.km_micor_service.dto.yearMonthPlan.dto.YearMonthWorkShopDto;
+import com.enovell.yunwei.km_micor_service.service.yearMonthPlan.YearMonthPuTieWSService;
+
+/**
+ * 项目名称：RINMS2MAIN
+ * 类名称：YearMonthWorkShopAction   
+ * 类描述:  年月报表编制车间action
+ * 创建人：chenshuang 
+ * 创建时间：2017年12月1日 下午5:08:45  
+ */
+@Controller
+@RequestMapping(value = "yearMonthPuTieWSAction")
+public class YearMonthPuTieWSAction {
+	
+	@Resource(name="yearMonthPuTieWSService")
+	private YearMonthPuTieWSService service;
+	
+	/**
+	 * reportToDuan 车间上报
+	 * @param reportId 车间业务id
+	 * @return ResultMsg
+	 */
+	@RequestMapping(value = "reportToDuan", method = RequestMethod.POST)
+	@ResponseBody
+	public ResultMsg reportToDuan(@RequestParam("reportId") String reportId) {
+		try {
+			service.reportToDuan(reportId);
+			return ResultMsg.getSuccess("上报成功！");
+		} catch (Exception e) {
+			e.printStackTrace();
+			return ResultMsg.getFailure("上报失败！");
+		}
+	}
+	/**
+	 * 
+	 * getDatas 车间编制页面数据查询
+	 * @param request
+	 * @param name 名称
+	 * @param year 年份
+	 * @param status 状态
+	 * @return
+	 */
+	@RequestMapping(value = "getDatas",method = RequestMethod.POST)
+	@ResponseBody
+	public String getDatas(HttpServletRequest request,
+			@RequestParam(required = false) String name, 
+			@RequestParam(required = false) String year, 
+			@RequestParam(required = false) String status,
+			String userOrgId
+			){
+		YearMonthWorkAreaDto dto = new YearMonthWorkAreaDto();
+		if (StringUtils.isNotBlank(name)) {
+			dto.setName(name);
+		}
+		if (StringUtils.isNotBlank(year)) {
+			dto.setYear(year);
+		}
+		if (StringUtils.isNotBlank(status)) {
+			dto.setStatus(status);
+		}
+		List<YearMonthWorkShopDto> datas = service.getDatas(dto,userOrgId);
+		return JsonUtil.javaToJsonAsString(datas);
+	}
+	/**
+	 * 
+	 * getWorkshopExecuteDatas 车间执行页面数据查询
+	 * @param request
+	 * @param name 名称
+	 * @param year 年份
+	 * @param status 状态
+	 * @return
+	 * @author chenshuang
+	 */
+	@RequestMapping(value = "getWorkshopExecuteDatas",method = RequestMethod.POST)
+	@ResponseBody
+	public String getWorkshopExecuteDatas(HttpServletRequest request,
+			@RequestParam(required = false) String name, 
+			@RequestParam(required = false) String year, 
+			@RequestParam(required = false) String status,
+			String userOrgId){
+		YearMonthWorkAreaDto dto = new YearMonthWorkAreaDto();
+		if (StringUtils.isNotBlank(name)) {
+			dto.setName(name);
+		}
+		if (StringUtils.isNotBlank(year)) {
+			dto.setYear(year);
+		}
+		if (StringUtils.isNotBlank(status)) {
+			dto.setStatus(status);
+		}
+		dto.setPage(YearMonthOperStatus.EXECUTE_PAGE);
+		List<YearMonthWorkShopDto> datas = service.getDatas(dto,userOrgId);
+		return JsonUtil.javaToJsonAsString(datas);
+	}
+	
+	/***
+	 * 车间审核不通过
+	 * @param workAreaIds 工区业务数据id
+	 * @param reasons 打回原因
+	 * @return
+	 */
+	@RequestMapping(value = "auditNotPass", method = RequestMethod.POST)
+	@ResponseBody
+	public ResultMsg auditNotPass(
+			@RequestParam("workAreaIds") String workAreaIds,
+			@RequestParam("reasons") String reasons) {
+		try {
+			String[] gcIds = workAreaIds.split(",");
+			service.auditBatchNotPass(Arrays.asList(gcIds),
+					YearMonthOperStatus.WRITE_WORKAREA_WORKSHOP_FAIL, reasons);
+			return ResultMsg.getSuccess("打回成功！");
+		} catch (Exception e) {
+			e.printStackTrace();
+			return ResultMsg.getFailure("打回失败！");
+		}
+	}
+	
+	/***
+	 * 车间审核通过
+	 * @param workAreaIds 工区业务数据id
+	 * @return
+	 */
+	@RequestMapping(value = "auditPass", method = RequestMethod.POST)
+	@ResponseBody
+	public ResultMsg auditPass(
+			@RequestParam("workAreaIds") String workAreaIds) {
+		try {
+			String[] gcIds = workAreaIds.split(",");
+			service.auditBatchPass(Arrays.asList(gcIds),
+					YearMonthOperStatus.WRITE_WORKAREA_WORKSHOP_PASS);
+			return ResultMsg.getSuccess("通过成功！");
+		} catch (Exception e) {
+			e.printStackTrace();
+			return ResultMsg.getFailure("通过失败！");
+		}
+	}
+	
+	///////////////////////////////////////////////段业务开始////////////////////////////////////////
+	
+	/***
+	 * 段科室审核不通过
+	 * @param workAreaIds 工区业务数据id
+	 * @param reasons 打回原因
+	 * @return
+	 */
+	@RequestMapping(value = "segmentAuditNotPass", method = RequestMethod.POST)
+	@ResponseBody
+	public ResultMsg segmentAuditNotPass(
+			@RequestParam("workAreaIds") String workAreaIds,
+			@RequestParam("reasons") String reasons) {
+		try {
+			String[] gcIds = workAreaIds.split(",");
+			service.auditBatchNotPass(Arrays.asList(gcIds),
+					YearMonthOperStatus.WRITE_WORKAREA_SEGMENT_FAIL, reasons);
+			return ResultMsg.getSuccess("打回成功！");
+		} catch (Exception e) {
+			e.printStackTrace();
+			return ResultMsg.getFailure("打回失败！");
+		}
+	}
+	
+	/**
+	* 段审核通过
+	* auditPass 
+	* @param workAreaIds 工区业务数据id
+	* @return
+	* ResultMsg
+	 */
+	@RequestMapping(value = "segmentAuditPass", method = RequestMethod.POST)
+	@ResponseBody
+	public ResultMsg segmentAuditPass(
+			@RequestParam("workAreaIds") String workAreaIds) {
+		try {
+			String[] gcIds = workAreaIds.split(",");
+			service.auditBatchPass(Arrays.asList(gcIds),
+					YearMonthOperStatus.WRITE_WORKAREA_SEGMENT_PASS);
+			return ResultMsg.getSuccess("通过成功！");
+		} catch (Exception e) {
+			e.printStackTrace();
+			return ResultMsg.getFailure("通过失败！");
+		}
+	}
+	
+	/**
+	 * 查询段页面数据--编制页面
+	 * @param name 名称
+	 * @param year 年份
+	 * @param status 状态
+	 * @param orgId 查询条件--多个车间id,用逗号隔开
+	 * @return
+	 * String
+	 * @author luoyan
+	 */
+	@RequestMapping(value = "getSegmentDatas", method = RequestMethod.POST)
+	@ResponseBody
+	public String getDatas(
+			@RequestParam(required = false) String name, 
+			@RequestParam(required = false) String year, 
+			@RequestParam(required = false) String status,
+			@RequestParam(required = false) String orgId) {
+		YearMonthWorkAreaDto dto = new YearMonthWorkAreaDto();
+		if (StringUtils.isNotBlank(name)) {
+			dto.setName(name);
+		}
+		if (StringUtils.isNotBlank(year)) {
+			dto.setYear(year);
+		}
+		if (StringUtils.isNotBlank(status)) {
+			dto.setStatus(status);
+		}
+		List<YearMonthWorkShopDto> datas = service.getSegmentDatas(dto, orgId);
+		return JsonUtil.javaToJsonAsString(datas);
+	}
+	/**
+	 * getExecuteDatas 查询段页面数据--执行页面
+	 * @param name 名称
+	 * @param year 年份
+	 * @param status 状态
+	 * @param orgId 查询条件--多个车间id,用逗号隔开
+	 * @return
+	 * @author chenshuang
+	 */
+	@RequestMapping(value = "getSegmentExecuteDatas", method = RequestMethod.POST)
+	@ResponseBody
+	public String getExecuteDatas(
+			@RequestParam(required = false) String name, 
+			@RequestParam(required = false) String year, 
+			@RequestParam(required = false) String status,
+			@RequestParam(required = false) String orgId) {
+		YearMonthWorkAreaDto dto = new YearMonthWorkAreaDto();
+		if (StringUtils.isNotBlank(name)) {
+			dto.setName(name);
+		}
+		if (StringUtils.isNotBlank(year)) {
+			dto.setYear(year);
+		}
+		if (StringUtils.isNotBlank(status)) {
+			dto.setStatus(status);
+		}
+		dto.setPage(YearMonthOperStatus.EXECUTE_PAGE);
+		List<YearMonthWorkShopDto> datas = service.getSegmentDatas(dto, orgId);
+		return JsonUtil.javaToJsonAsString(datas);
+	}
+	
+	/**
+	* 批量删除
+	* deleteBatch 
+	* @param ids
+	* @return
+	* ResultMsg
+	 */
+	@RequestMapping(value = "deleteBatch", method = RequestMethod.POST)
+	@ResponseBody
+	public ResultMsg workAreaUnlock(@RequestParam("ids") String ids) {
+		try {
+			String[] idArr = ids.split(",");
+			service.deleteBatch(Arrays.asList(idArr));
+			return ResultMsg.getSuccess("删除成功！");
+		} catch (Exception e) {
+			e.printStackTrace();
+			return ResultMsg.getFailure("删除失败！");
+		}
+	}
+	///////////////////////////////////////////////段业务结束////////////////////////////////////////
+}

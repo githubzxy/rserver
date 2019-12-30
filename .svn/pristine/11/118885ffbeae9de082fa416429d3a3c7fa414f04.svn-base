@@ -1,0 +1,189 @@
+package com.enovell.yunwei.km_micor_service.action.constructionManage.constructProtocol;
+
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
+
+import org.bson.Document;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.enovell.yunwei.km_micor_service.dto.GridDto;
+import com.enovell.yunwei.km_micor_service.dto.ResultMsg;
+import com.enovell.yunwei.km_micor_service.service.constructionManage.constructProtocol.ConstructProtocolService;
+import com.enovell.yunwei.km_micor_service.service.dayToJobManageService.ConstructCooperateService;
+import com.mongodb.DBObject;
+import com.mongodb.util.JSON;
+
+@RequestMapping("/constructProtocolAction")
+@RestController
+public class ConstructProtocolAction {
+	@Resource(name="constructProtocolService")
+	private ConstructProtocolService service;
+	@Resource(name="constructCooperateService")
+	private ConstructCooperateService constructCooperateService;
+	
+	@PostMapping("/findAllDatas")
+	public GridDto<Document> findAllDatas(@RequestParam String collectionName,
+			String proName,
+			String proCompany,
+			String line,
+			String workShop,
+			String beginDateStart,
+			String beginDateEnd,
+			String proPlace,
+			String overDateStart,
+			String overDateEnd,
+			@RequestParam int start,
+			@RequestParam int limit,
+			@RequestParam String userId){
+		GridDto<Document> result=new GridDto<>();
+		result.setResults(service.findAllDocumentCount(collectionName, proName, proCompany,line,workShop,beginDateStart,beginDateEnd,proPlace,overDateStart,overDateEnd));
+		result.setRows(service.findAllDocument(collectionName,  proName, proCompany,line,workShop,beginDateStart,beginDateEnd,proPlace,overDateStart,overDateEnd, start, limit));
+		return result;
+	}
+	/**用于首页中方框及列表展示施工配合协议
+	 * @param collectionName
+	 * @param start
+	 * @param limit
+	 * @return
+	 */
+//	@CrossOrigin
+	@PostMapping("/homeData")
+	public GridDto<Document> homeData(@RequestBody Map<String,Object> params){
+		GridDto<Document> result=new GridDto<>();
+		int start = (int) params.get("start"),limit = (int) params.get("limit");
+		result.setResults(service.findAllDocumentCount(params.get("collectionName").toString(), null, null,null,null,null,null,null,null,null));
+		result.setRows(service.findAllDocument(params.get("collectionName").toString(),  null, null,null,null,null,null,null,null,null, start, limit));
+		return result;
+	}
+	/**用于首页中展示施工配合协议详情
+	 * @param collectionName
+	 * @param start
+	 * @param limit
+	 * @return
+	 */
+//	@CrossOrigin
+	@PostMapping("/homeDetail")
+	public Document homeDetail(@RequestBody Map<String,Object> params){
+		return service.findDatasById(params.get("id").toString(), params.get("collectionName").toString());
+	}
+	@PostMapping("/getLines")
+	public List<Map<String,String>> getLines(){
+		List<String> lineList=constructCooperateService.getLineData();
+		List<Map<String,String>> lineDatas=new ArrayList<>();
+		for (String string : lineList) {
+			 Map<String,String> map=new HashMap<String,String>();
+				map.put("text", string);
+				map.put("value", string);
+				lineDatas.add(map);
+		}
+		return lineDatas;
+	}
+	@PostMapping("/getworkShop")
+	public List<Map<String,String>> getworkShop(){
+		List<String> cjList=service.getWorkShops();
+		List<Map<String,String>> cjDatas=new ArrayList<>();
+		for (String string : cjList) {
+			Map<String,String> map=new HashMap<String,String>();
+			map.put("text", string);
+			map.put("value", string);
+			cjDatas.add(map);
+		}
+		return cjDatas;
+	}
+	@PostMapping("/removeDoc")
+	public ResultMsg removeDoc(@RequestParam("id") String id,
+			@RequestParam("userId") String userId, 
+			@RequestParam("collectionName") String collectionName) {
+		  List<String> ids = Arrays.asList(id.split(","));
+	        List<String> userIdList = new ArrayList<String>();
+	        ids.forEach(s->{
+	        	 Document res = service.findDatasById(s, collectionName);
+	        	 userIdList.add((String) res.get("userId"));
+	        });
+	      //判断选择的记录是否全为自己添加的记录
+	   	 boolean userIdReat =userIdList.stream().allMatch(f->f.equals(userId)==true);
+	   	 System.out.println(userIdReat);
+	     if(userIdReat==true){
+	    	 service.removeDocument(ids, collectionName);
+	    	 return ResultMsg.getSuccess("删除成功");
+	     }else{
+	    	 return ResultMsg.getFailure("请选择自己添加的记录删除");
+	     }
+	}
+	@PostMapping("/addDoc")
+	public ResultMsg addDoc(
+			@RequestParam(name = "proName") String proName,
+            @RequestParam(name = "proCompany") String proCompany,
+            String line,
+            @RequestParam(name = "uploadFileArr") String uploadFileArr,
+            String workShop,
+            @RequestParam(name = "beginDate") String beginDate,
+            @RequestParam(name = "overDate") String overDate,
+            @RequestParam(name = "proPlace") String proPlace,
+            @RequestParam(name = "isContract") String isContract,
+            @RequestParam(name = "collectionName") String collectionName,
+            @RequestParam(name = "userId") String userId,
+
+            HttpServletRequest request) {
+		Document document = new Document();
+		SimpleDateFormat sdf=new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+		Date date=new Date();
+		String createDate=sdf.format(date);
+		DBObject uploadFile =(DBObject) JSON.parse(uploadFileArr);
+		document.put("uploadFileArr", uploadFile);
+		document.put("proName", proName);
+		document.put("proCompany", proCompany);
+		document.put("line", line);
+		document.put("workShop", workShop);
+		document.put("beginDate", beginDate);
+		document.put("overDate", overDate);
+		document.put("proPlace", proPlace);
+		document.put("isContract", isContract);
+		document.put("createDate", createDate);
+		document.put("userId", userId);
+		Document res = service.addDocument(document, collectionName);
+		return ResultMsg.getSuccess("新增成功", res);
+		} 
+	 @PostMapping("/updateDoc")
+	    public ResultMsg updateDoc(	@RequestParam("id") String id,
+	    		@RequestParam(name = "proName") String proName,
+	            @RequestParam(name = "proCompany") String proCompany,
+	            String line,
+	            @RequestParam(name = "uploadFileArr") String uploadFileArr,
+	            String workShop,
+	            @RequestParam(name = "beginDate") String beginDate,
+	            @RequestParam(name = "overDate") String overDate,
+	            @RequestParam(name = "proPlace") String proPlace,
+	            @RequestParam(name = "userId") String userId,
+	            @RequestParam(name = "collectionName") String collectionName,
+					                HttpServletRequest request) {
+	        Document doc = service.findDatasById(id,collectionName);
+	       
+	        DBObject uploadFile =(DBObject) JSON.parse(uploadFileArr);
+	        doc.put("uploadFileArr", uploadFile);
+	        doc.put("proName", proName);
+	        doc.put("proCompany", proCompany);
+	        doc.put("line", line);
+	        doc.put("workShop", workShop);
+	        doc.put("beginDate", beginDate);
+	        doc.put("overDate", overDate);
+	        doc.put("proPlace", proPlace);
+	        
+	       service.updateDocument(doc, collectionName);
+	        return ResultMsg.getSuccess("修改成功");
+	    }
+	
+	 
+}

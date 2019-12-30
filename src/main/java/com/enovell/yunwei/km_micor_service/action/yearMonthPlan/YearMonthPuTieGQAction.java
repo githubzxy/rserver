@@ -1,0 +1,336 @@
+package com.enovell.yunwei.km_micor_service.action.yearMonthPlan;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
+
+import org.apache.commons.lang.StringUtils;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import com.enovell.system.common.domain.User;
+import com.enovell.yunwei.km_micor_service.dto.GridDto;
+import com.enovell.yunwei.km_micor_service.dto.ResultMsg;
+import com.enovell.yunwei.km_micor_service.dto.yearMonthPlan.domain.YearMonthPutieGQ;
+import com.enovell.yunwei.km_micor_service.dto.yearMonthPlan.dto.AttachShowDto;
+import com.enovell.yunwei.km_micor_service.dto.yearMonthPlan.dto.YearMonthWorkAreaDto;
+import com.enovell.yunwei.km_micor_service.service.yearMonthPlan.YearMonthPuTieWSService;
+import com.enovell.yunwei.km_micor_service.service.yearMonthPlan.YearMonthPutieGQService;
+import com.enovell.yunwei.km_micor_service.util.JsonUtil;
+
+/**
+ * 年月报表编制工区action
+* @ClassName: YearMonthPuTieGQAction 
+* @date 2017年9月19日 下午1:16:53 
+* @author luoyan
+ */
+
+@Controller
+@RequestMapping(value = "yearMonthPuTieGQAction")
+public class YearMonthPuTieGQAction {
+	
+	@Resource(name="yearMonthPutieGQService")
+	private YearMonthPutieGQService service;
+	
+	@Resource(name="yearMonthPuTieWSService")
+	private YearMonthPuTieWSService yearMonthWorkShopService;
+	
+	@RequestMapping(value = "importReport", method = RequestMethod.POST)
+	@ResponseBody
+	public ResultMsg importReport(HttpServletRequest request,
+			@RequestParam(name = "uploadFileArrYear") String uploadFileArrYear, 
+			@RequestParam(name = "uploadFileArrMonth") String uploadFileArrMonth,
+			@RequestParam(name = "uploadFileYearPath") String uploadFileYearPath,
+			@RequestParam(name = "uploadFileMonthPath") String uploadFileMonthPath,
+			@RequestParam("id") String id,
+			@RequestParam("name") String name,
+			@RequestParam("year") String year,
+			String userString) {
+		User user = JsonUtil.jsonToJavaObj(userString, User.class);
+		try {
+			return service.importReport(uploadFileYearPath,uploadFileMonthPath,id,name, year, user);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return ResultMsg.getFailure("上传失败！");
+		}
+	}
+	
+	/**
+	 * 新增年月报表
+	* addReport 
+	* @param request
+	* @param name 报表名称
+	* @param year 年份
+	* @return ResultMsg
+	 */
+	@RequestMapping(value = "addReport", method = RequestMethod.POST)
+	@ResponseBody
+	public ResultMsg addReport(HttpServletRequest request,
+			@RequestParam("name") String name,
+			@RequestParam("year") String year,
+			String userString) {
+		User user = JsonUtil.jsonToJavaObj(userString, User.class);
+		try {
+			return service.addReport(name, year, user);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return ResultMsg.getFailure("新增失败！");
+		}
+	}
+
+	/**
+	 * 分页查询数据
+	* queryAllData 
+	* @param name 名称
+	* @param year 年份
+	* @param status 状态
+	* @param start 开始条数
+	* @param limit 查询条数
+	* @return GridDto<YearMonthPutieGQ>
+	* @author luoyan
+	 */
+	@RequestMapping(value = "queryAllData",method = RequestMethod.POST)
+	@ResponseBody
+	public GridDto<YearMonthPutieGQ> queryAllData(HttpServletRequest request,
+			@RequestParam(required = false) String name, 
+			@RequestParam(required = false) String year, 
+			@RequestParam(required = false) String status, 
+			String userString,
+			@RequestParam("start")int start,@RequestParam("limit")int limit){
+		User user = JsonUtil.jsonToJavaObj(userString, User.class);
+		YearMonthWorkAreaDto dto = new YearMonthWorkAreaDto();
+		if (StringUtils.isNotBlank(name)) {
+			dto.setName(name);
+		}
+		if (StringUtils.isNotBlank(year)) {
+			dto.setYear(year);
+		}
+		if (StringUtils.isNotBlank(status)) {
+			dto.setStatus(status);
+		}
+		GridDto<YearMonthPutieGQ> gd = service.queryAllData(dto, start, limit,user);
+		return gd;
+	}
+	
+	/**
+	 * 根据id和附表字段名(前端根据数据库字段赋给列表数据)获取附表路径
+	* getAttachPath 
+	* @param id 车间业务id或工区业务id
+	* @param attachType 附表类型
+	* @param isWorkShop 工区查询--'false'，车间查询'true'
+	* @return
+	* ResultMsg
+	* @author luoyan
+	 */
+	@RequestMapping(value = "getAttachPath",method = RequestMethod.POST)
+	@ResponseBody
+	public ResultMsg getAttachPath(
+			@RequestParam("id")String id,@RequestParam("attachType")String attachType,
+			@RequestParam("isWorkShop")String isWorkShop){
+		ResultMsg rm = new ResultMsg();
+		try {
+			String attachPath = null ;
+			if("false".equals(isWorkShop)) {
+				attachPath = service.getAttachPath(id, attachType);
+			}else if("true".equals(isWorkShop)){
+				attachPath = yearMonthWorkShopService.getAttachPath(id, attachType);
+			}
+			rm.setStatus(ResultMsg.SUC_STATUS);
+			rm.setData(attachPath);
+		} catch (Exception e) {
+			e.printStackTrace();
+			rm.setStatus(ResultMsg.FAIL_STATUS);
+		}
+		return rm;
+	}
+	
+	/**
+	 * 根据id查询工区年月表所有数据
+	* queryAllDataById
+	* @param id 工区业务id
+	* @return List<Map<String, Object>>
+	 */
+	@RequestMapping(value = "queryAllDataById", method = RequestMethod.POST)
+	@ResponseBody
+	public List<Map<String, Object>> queryAllDataById(@RequestParam("id") String id) {
+		List<Map<String, Object>> allDataById = service.queryAllDataById(id);
+		return allDataById;
+	}
+	
+	/**
+	 * 根据id修改工区年月表数据
+	 * updateReportById
+	 * @param id 工区业务id
+	 * @param name 年月表名称
+	 * @param year 年月表年份
+	 * @return ResultMsg
+	 * 
+	 */
+	@RequestMapping(value = "updateReportById", method = RequestMethod.POST)
+	@ResponseBody
+	public ResultMsg updateReportById(HttpServletRequest request,
+			@RequestParam("id") String id, 
+			@RequestParam("name") String name,
+			@RequestParam("year") String year,
+			String userString) {
+		User user = JsonUtil.jsonToJavaObj(userString, User.class);
+		try {
+			return service.updateReportById(id, name, year, user);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return ResultMsg.getFailure("修改失败！");
+		}
+	}
+	
+	/**
+	 * 根据id批量删除年月报表
+	 * deleteReports
+	 * @param id 工区业务id
+	 * @return ResultMsg
+	 */
+	@RequestMapping(value = "deleteReports", method = RequestMethod.POST)
+	@ResponseBody
+	public ResultMsg deleteReports(@RequestParam("ids") String ids) {
+		try {
+			String[] id = ids.split(",");
+			for (int i = 0; i < id.length; i++) {
+				service.deleteReports(id[i]);
+			}
+			return ResultMsg.getSuccess("删除成功！");
+		} catch (Exception e) {
+			e.printStackTrace();
+			return ResultMsg.getFailure("修改失败！");
+		}
+	}
+	
+	/**
+	 * 工区上报到车间
+	* reportToWorkShop 
+	* @param request
+	* @param id 工区业务id
+	* @param year 年份
+	* @return
+	* ResultMsg
+	 */
+	@RequestMapping(value = "reportToWorkShop", method = RequestMethod.POST)
+	@ResponseBody
+	public ResultMsg reportToWorkShop(HttpServletRequest request,
+			@RequestParam("id") String id, 
+			@RequestParam("year") String year,
+			String userString) {
+		User user = JsonUtil.jsonToJavaObj(userString, User.class);
+		try {
+			service.reportToWorkShop(id, year, user);
+			return ResultMsg.getSuccess("上报成功！");
+		} catch (Exception e) {
+			e.printStackTrace();
+			return ResultMsg.getSuccess("上报失败！");
+		}
+	}
+	
+	/**
+	 * 
+	 * workAreaUnlock 段解锁及段批量解锁
+	 * @param workAreaIds 工区业务数据，可以为多个或一个
+	 * @return
+	 */
+	@RequestMapping(value = "workAreaUnlock", method = RequestMethod.POST)
+	@ResponseBody
+	public ResultMsg workAreaUnlock(
+			@RequestParam("workAreaIds") String workAreaIds) {
+		String[] ids = workAreaIds.split(",");
+		try {
+			service.workAreaUnlock(Arrays.asList(ids));
+			return ResultMsg.getSuccess("解锁成功！");
+		} catch (Exception e) {
+			e.printStackTrace();
+			return ResultMsg.getFailure("解锁失败！");
+		}
+	}
+	
+	/**
+	 * getAttachDataByGQId 根据工区id查询工区附件展示数据
+	 * @param id 工区业务数据id
+	 * @return
+	 */
+	@RequestMapping(value = "getAttachDataByGQId", method = RequestMethod.POST)
+	@ResponseBody
+	public String getAttachDataByGQId(@RequestParam("id") String id) {
+		List<AttachShowDto> result = service.getAttachDataByGQId(id);
+		return JsonUtil.javaToJsonAsString(result);
+		
+	}
+	
+	/**
+	 * getAttachDataByGQId 根据工区id查询车间附件展示数据
+	 * @param id 车间业务数据id
+	 * @return
+	 */
+	@RequestMapping(value = "getAttachDataByCJId", method = RequestMethod.POST)
+	@ResponseBody
+	public String getAttachDataByCJId(@RequestParam("id") String id) {
+		List<AttachShowDto> result = service.getAttachDataByCJId(id);
+		return JsonUtil.javaToJsonAsString(result);
+		
+	}
+	
+	/**
+	 * getAttachDataByGQId 根据工区id查询段附件展示数据
+	 * @param id 工区业务数据id
+	 * @return
+	 */
+	@RequestMapping(value = "getAttachDataDuan", method = RequestMethod.POST)
+	@ResponseBody
+	public String getAttachDataDuan(@RequestParam("ids") String ids) {
+		List<AttachShowDto> result = service.getAttachDataDuan(ids);
+		return JsonUtil.javaToJsonAsString(result);
+		
+	}
+	
+	/**
+	 * getAttachDataByGQId 获取编制页面弹框展示数据（导出、汇总）--段科室
+	 * @param id 工区业务数据id
+	 * @return
+	 */
+	@RequestMapping(value = "getAttachPlanDataDuan", method = RequestMethod.POST)
+	@ResponseBody
+	public String getAttachPlanDataDuan(@RequestParam("ids") String ids) {
+		List<AttachShowDto> result = service.getAttachPlanDataDuan(ids);
+		return JsonUtil.javaToJsonAsString(result);
+		
+	}
+	
+	/**    
+	 * saveFileName 保存工区数据的对应报表的报表名称，以便根据文件名称是否存在来区分当前报表是否已经填报
+	 *
+	 * @author lidt
+	 * @date 2018年12月3日 下午1:53:25 
+	 * @param id 工区数据的id
+	 * @param attachType 由前端静态数据传的附表名称，对应数据库附表名称字段名
+	 * @param fileName 报表名称
+	 * @return
+	 */
+	@RequestMapping(value = "/saveFileName", method = RequestMethod.POST)
+	@ResponseBody
+	public ResultMsg saveFileName(
+			@RequestParam("id") String id,
+			@RequestParam("attachType") String attachType,
+			@RequestParam("filePath") String filePath
+			) {
+		try {
+			String fileName = filePath.split("/")[filePath.split("/").length - 1];
+			service.saveFileName(id, attachType, fileName);
+			return ResultMsg.getSuccess("保存成功！");
+		} catch (Exception e) {
+			e.printStackTrace();
+			return ResultMsg.getFailure("保存失败！");
+		}
+	}
+	
+}

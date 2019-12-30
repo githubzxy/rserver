@@ -1,0 +1,205 @@
+package com.enovell.yunwei.km_micor_service.service.yearMonthPlan;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+
+import javax.annotation.Resource;
+
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.enovell.system.common.domain.User;
+import com.enovell.yunwei.km_micor_service.dto.ResultMsg;
+import com.enovell.yunwei.km_micor_service.dto.yearMonthPlan.YearMonthReportAttachPuTie;
+import com.enovell.yunwei.km_micor_service.dto.yearMonthPlan.domain.YearMonthPutieGQ;
+import com.enovell.yunwei.km_micor_service.dto.yearMonthPlan.dto.YearMonthWorkShopDto;
+import com.enovell.yunwei.km_micor_service.util.yearMonthPlan.CopyExcelSheetByJxl;
+import com.enovell.yunwei.km_micor_service.util.yearMonthPlan.PoiExcelSheetCopy;
+import com.enovell.yunwei.km_micor_service.util.yearMonthPlan.YearMonthPlanFilePathUtils;
+
+/**
+* @Title: YearMonthAnysisServiceImpl.java 
+* @Package com.enovell.yunwei.yearMonthReport.service.impl 
+*/
+
+@Service("yearMonthPutieAnysisService")
+@Transactional
+public class YearMonthPutieAnysisServiceImpl implements YearMonthPutieAnysisService{
+	
+	@Autowired
+	private NamedParameterJdbcTemplate jdbcTemplate;
+	
+	@Resource(name="tXYearMonthPutieMongoService")
+	private TXYearMonthPutieMongoService tXYearMonthPutieMongoService;
+	
+	@Resource(name="tXYearPutieMongoExecuteService")
+	private TXYearPutieMongoExecuteService tXYearPutieMongoExecuteService;
+	
+	
+	@Resource(name = "yearMonthPutieGQService")
+	private YearMonthPutieGQService yearMonthPutieGQService;
+	
+	@Resource(name="yearMonthPuTieWSService")
+	private YearMonthPuTieWSService yearMonthPuTieWSService;
+		
+	@Override
+	public ResultMsg anysisSegment(String ids, String attachPath,User user) {
+		if(StringUtils.isBlank(ids)){
+			return ResultMsg.getFailure("id不能为空！");
+		}
+		List<String> excels = getCJExcelsByIdAndAttach(ids,attachPath);
+	    String data = null;
+	    if(CollectionUtils.isEmpty(excels)) {
+			return ResultMsg.getFailure("没有报表数据可以汇总！");
+	    }
+	    if(YearMonthReportAttachPuTie.ATTACH_PATH8_1.equals(attachPath)){
+	    	data =  tXYearMonthPutieMongoService.summaryOfTxYear(excels,user);
+		}
+	    return ResultMsg.getSuccess("汇总成功！", data);
+	}
+
+	@Override
+	public List<String> getCJExcelsByIdAndAttach(String ids, String attachPath) {
+		String[] id = ids.split(",");
+		String sql = " select "+attachPath+" from YEAR_MONTH_PUTIE_CJ where ID_ in(:ids) ";
+		MapSqlParameterSource parameters = new MapSqlParameterSource();
+	    parameters.addValue("ids", Arrays.asList(id));
+	    List<Map<String, Object>> list = jdbcTemplate.queryForList(sql, parameters);
+	    List<String> excels = new ArrayList<String>();
+	    for(Map<String, Object> map : list){
+	    	for(Entry<String, Object> e : map.entrySet()){
+	    		if(StringUtils.isNotBlank((String) e.getValue())) {//判断该车间的业务数据中对于的报表路径是否存在
+	    			excels.add((String) e.getValue());
+		    	}
+	    	}
+	    }
+	    return excels;
+	}
+
+	@Override
+	public ResultMsg workShopSummary(String id,User user,String attachPath,String flowType) {
+		if(StringUtils.isBlank(id)){
+			return ResultMsg.getFailure("数据有误，请刷新重试！");
+		}
+		//获取该车间下的工区数据 
+		List<YearMonthPutieGQ> workAreaDatas = yearMonthPutieGQService.getworkAreaDatas(id);
+		//根据id查询车间业务数据
+		YearMonthWorkShopDto dto = yearMonthPuTieWSService.getYearMonthWorkShopDtoById(id);
+		//工区数据的组织机构名称
+		List<String> OrgNameDatas = new ArrayList<String>();
+		//工区年月表路径数据
+		List<String> reportPaths = new ArrayList<String>();
+		//设置工区附件路径和组织结构名称
+		setReportPathAndOrgName(workAreaDatas, OrgNameDatas, reportPaths, attachPath);
+		//获取车间附件路径
+		String summaryFileName = getSumaryFileName(user, attachPath, dto, OrgNameDatas, reportPaths, flowType);
+		yearMonthPuTieWSService.updateAttachFilePath(id, attachPath,summaryFileName);
+		return ResultMsg.getSuccess("汇总成功！", summaryFileName);
+	}
+	
+	/**    
+	 * getSumaryFileName 获取车间附件的名称
+	 * @param user 登录用户
+	 * @param attachPath 附件类型
+	 * @param monthNum 月份
+	 * @param dto 车间业务数据
+	 * @param OrgNameDatas 工区组织结构名称集合
+	 * @param reportPaths 工区报表路径集合
+	 * @return
+	 */
+	private String getSumaryFileName(User user, String attachPath, YearMonthWorkShopDto dto,
+			List<String> OrgNameDatas, List<String> reportPaths, String flowType) {
+		//被操作的sheet页号(从0开始)
+		int sheetNum=0;
+		String attachPathValue = getWorkshopSummaryPath(reportPaths, user, attachPath);
+		String summaryFile = summarySheetData(attachPathValue, user, reportPaths, OrgNameDatas,sheetNum,flowType);
+		String summaryFileName = summaryFile.split("/")[summaryFile.split("/").length - 1];
+		return summaryFileName;
+	}
+	/**
+	 * 
+	 * setReportPathAndOrgName 设置工区附件路径和组织结构名称
+	 * @param workAreaDatas 工区业务数据
+	 * @param OrgNameDatas 组织机构名称
+	 * @param reportPaths 报表路径
+	 * @param attachPath 报表字段名
+	 */
+	private void setReportPathAndOrgName(List<YearMonthPutieGQ> workAreaDatas,List<String> OrgNameDatas,List<String> reportPaths,String attachPath) {
+		for (YearMonthPutieGQ y : workAreaDatas) {
+			if(StringUtils.isNotBlank(y.getAttachPath8_1())&&StringUtils.isNotBlank(y.getAttachName8_1())&&YearMonthReportAttachPuTie.ATTACH_PATH8_1.equals(attachPath)) {
+				reportPaths.add(y.getAttachPath8_1());
+				OrgNameDatas.add(y.getOrgName());
+				continue;
+			}
+			if(StringUtils.isNotBlank(y.getAttachPathExecute8_1())&&StringUtils.isNotBlank(y.getAttachName8_1())&&YearMonthReportAttachPuTie.ATTACH_EXECUTE8_1.equals(attachPath)) {
+				reportPaths.add(y.getAttachPathExecute8_1());
+				OrgNameDatas.add(y.getOrgName());
+				continue;
+			}
+		}
+	}
+	/**
+	 * 
+	 * summarySheetData 将该车间汇总的报表数据，该车间下已填报工区的报表数据，合并到一个excel中，以sheet分页的方式分开，sheet页命名为报表数据的所属组织结构
+	 * @param workShopFilePath 该车间汇总的报表数据文件路径
+	 * @param user 登录用户
+	 * @param workAreaFilePaths 该车间下已填报工区的报表数据文件路径集合
+	 * @param workAreaOrgName 该车间下已填报工区的组织机构名称
+	 * @return 合并excel之后的文件文件名称
+	 */
+	private String summarySheetData(String workShopFilePath, User user,
+			List<String> workAreaFilePaths, List<String> workAreaOrgName,
+			int fromFileSheetNum,String flowType) {
+		String orgId = user.getOrganization().getId();
+		String workShopOrgName = user.getOrganization().getName();
+		List<Map<String, String>> reportDatas = new ArrayList<Map<String, String>>();
+		String filePath = YearMonthPlanFilePathUtils.getPuTie();
+		String summaryFile = YearMonthPlanFilePathUtils.getPuTie(orgId, YearMonthPutieAnysisServiceImpl.class);
+		if (YearMonthPlanFilePathUtils.EXECUTE.equals(flowType)) {
+			summaryFile = YearMonthPlanFilePathUtils.getPuTie(orgId, YearMonthPutieCJExecuteServiceImpl.class);
+		}
+		Map<String, String>  workShopData = new HashMap<>();
+		workShopData.put(CopyExcelSheetByJxl.FILE_PATH, workShopFilePath);
+		workShopData.put(CopyExcelSheetByJxl.SHEET_NAME, workShopOrgName+"汇总数据");
+		reportDatas.add(workShopData);
+		
+		for(int i=0;i<workAreaFilePaths.size();i++) {
+			Map<String, String>  workAreaData = new HashMap<>();
+			workAreaData.put(CopyExcelSheetByJxl.FILE_PATH, filePath+workAreaFilePaths.get(i));
+			workAreaData.put(CopyExcelSheetByJxl.SHEET_NAME, workAreaOrgName.get(i));
+			reportDatas.add(workAreaData);
+		}
+		PoiExcelSheetCopy.getExcelwithSheets(reportDatas, summaryFile,fromFileSheetNum);
+		return summaryFile;
+	}
+	
+	/**
+	 * 
+	 * getWorkshopSummaryPath 车间汇总，得到汇总后的excel文件路径
+	 * @param reportPaths 汇总的工区报表路径数据集合
+	 * @param user 登录用户
+	 * @param attachPath 附件类型
+	 * @return
+	 */
+	private String getWorkshopSummaryPath(List<String> reportPaths,User user,String attachPath) {
+		//车间汇总后，生成的对应的年月表的路径，包括文件名称。
+		String attachPathValue = null;
+		if(YearMonthReportAttachPuTie.ATTACH_PATH8_1.equals(attachPath)) {
+			attachPathValue = tXYearMonthPutieMongoService.summaryOfTxYear(reportPaths,user);
+		}else if(YearMonthReportAttachPuTie.ATTACH_EXECUTE8_1.equals(attachPath)) {
+			attachPathValue = tXYearPutieMongoExecuteService.summaryOfTxYear(reportPaths,user);
+		}
+		return attachPathValue;
+	}
+
+
+}

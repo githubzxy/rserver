@@ -1,0 +1,30 @@
+package com.enovell.yunwei.km_micor_service.service.integratedManage.attendanceManage;
+
+import java.util.List;
+
+import org.bson.Document;
+
+public interface AttendanceManageCollectQueryService {
+	
+	/**
+	 * 根据id修改数据
+	 * @param id
+	 * @return
+	 */
+	Document findDatasById(String id,String collectionName);
+	/**
+	 * 修改数据
+	 * @param doc
+	 * @param collectionName
+	 * @return
+	 */
+	Document updateCollectDocument(Document doc, String collectionName);
+	
+	/**
+	 * 分页查询
+	 * @return
+	 */
+	long findAllDataCount(String attendanceManageCollect, String orgId, int orgType, String startUploadDate, String endUploadDate);
+	List<Document> findAllData(String attendanceManageCollect, String orgId, int orgType, String startUploadDate, String endUploadDate,int start, int limit);
+	
+}

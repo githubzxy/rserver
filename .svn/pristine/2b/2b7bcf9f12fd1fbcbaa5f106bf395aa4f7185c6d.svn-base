@@ -1,0 +1,15 @@
+package com.enovell.yunwei.km_micor_service.dto.communicationResumeManage;
+
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+
+@Data
+@EqualsAndHashCode(callSuper=true)
+public class WiredWiredDto extends PublicDto{
+	   
+	private String capacity;//容量
+	private String roadCapacity;//路产容量
+	private String assetRatio;//资产比例
+	private String capacityUnit;//容量单位
+	
+}

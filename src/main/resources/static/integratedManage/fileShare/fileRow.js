@@ -1,0 +1,215 @@
+/**
+ * 目录及文件列表上单行下面部分,显示文件或目录名，注释，以及对应的按钮组
+ * 
+ * @author roysong
+ * @date 190520
+ */
+define('kmms/integratedManage/fileShare/fileRow',
+		['bui/common','bui/data','bui/list','bui/toolbar',
+			'bui/overlay','common/data/PostLoad',
+			'kmms/integratedManage/fileShare/rowLabel',
+			'kmms/integratedManage/fileShare/commentLabel',
+			'kmms/integratedManage/fileShare/buttonGroup',
+			'kmms/integratedManage/fileShare/updateDic',
+		],
+		function(r){
+	var BUI = r('bui/common'),
+    Data = r('bui/data'),
+    Overlay = r('bui/overlay'),
+    PostLoad = r('common/data/PostLoad'),
+    RowLabel = r('kmms/integratedManage/fileShare/rowLabel'),
+    ButtonGroup = r('kmms/integratedManage/fileShare/buttonGroup'),
+    CommentLabel = r('kmms/integratedManage/fileShare/commentLabel'),
+    UpdateDic = r('kmms/integratedManage/fileShare/updateDic')
+    ;
+	var fileRow = BUI.Component.Controller.extend({
+		initializer : function(){
+			var _self = this,item = _self.get('item'),buttonVisible = _self.get('buttonVisible');
+			//显示文件或目录名
+			switch(item.type){
+			case '1' :
+				var dicLabel = new RowLabel({
+					elCls : 'dicSpan',
+					iconPath : '/bui/img/icon_file_fill.svg',
+					item : item
+				});
+				_self.addChild(dicLabel);
+				break;
+			case '2' :
+				var fileLabel = new RowLabel({
+					elCls : 'fileSpan',
+					iconPath : '/bui/img/icon_doc.svg',
+					item : item
+				});
+				_self.addChild(fileLabel);
+			}
+			//显示注释
+			var commentLabel = new CommentLabel({
+				text : item.comment
+			});
+			_self.addChild(commentLabel);
+			//显示按钮组
+			switch(item.type){
+			case '1' :
+				var buttons = [];
+				if(buttonVisible.showRenameDic) 
+					buttons.push({type : 'warning',icon : 'edit',item : item,eventName : 'dicEdit'});
+				if(buttonVisible.showDelDic)
+					buttons.push({type : 'error',icon : 'trash',item : item,eventName : 'dicDel'});
+				if(buttons.length > 0){
+					var buttonGroup = new ButtonGroup({
+						buttons : buttons
+					});
+					_self.addChild(buttonGroup);
+				}
+				break;
+			case '2' :
+				var buttons = [];
+				if(buttonVisible.showEditFile) 
+					buttons.push({type : 'warning',icon : 'edit',item : item,eventName : 'fileEdit'});
+				if(buttonVisible.showPreviewFile)
+					buttons.push({type : 'info',icon : 'search',item : item,eventName : 'filePreview'});
+				if(buttonVisible.showDownFile) 
+					buttons.push({type : 'success',icon : 'download-alt',item : item,eventName : 'fileDownload'});
+				if(buttonVisible.showDelFile)
+					buttons.push({type : 'error',icon : 'trash',item : item,eventName : 'fileDel'});
+				if(buttons.length > 0){
+					var buttonGroup = new ButtonGroup({
+						buttons : buttons
+					});
+					_self.addChild(buttonGroup);
+				}
+				break;
+			}
+		},
+		bindUI : function(){
+			var _self = this,collectionName = _self.get('collectionName');
+			// 修改目录
+			_self.on('dicEdit',function(item){
+				var updateDicDialog = new UpdateDic({
+					perId : _self.get('perId'),
+					userId : _self.get('userId'),
+					orgId : _self.get('orgId'),
+					orgName : _self.get('orgName'),
+					item : item,
+					collectionName : collectionName
+				});
+				updateDicDialog.show();
+				updateDicDialog.on('completeAddSave',function(e){
+					BUI.Message.Alert('目录修改成功','success');
+					_self.fire('dicEditOver');
+				});
+			});
+			// 删除目录
+			_self.on('dicDel',function(item){
+				var hasChildren = new PostLoad({
+					url : '/kmms/fileShareAction/findAll',
+					el : _self.get('el'),
+    				loadMsg : '删除目录中...'
+				});
+				hasChildren.load({parentId : item.id,collectionName : collectionName,start : 0,limit : 20},function(rs){
+					if(rs.results > 0){
+						BUI.Message.Alert('本目录下存在子目录或文件，无法删除','warning');
+					}else{
+						var pl = new PostLoad({
+							url : '/kmms/fileShareAction/deleteById',
+							el : _self.get('el'),
+	        				loadMsg : '删除目录中...'
+						});
+						BUI.Message.Confirm('确认要删除目录么？',function(){
+							pl.load({id : item.id,collectionName : collectionName},function(data){
+								BUI.Message.Alert('删除成功','success');
+								_self.fire('dicDelOver');
+							});
+						},'question');
+					}
+				});
+			});
+			// 在线编辑文件
+			_self.on('fileEdit',function(item){
+				_self._previewFile(item.name,item.path,true);
+			});
+			// 在线预览文件
+			_self.on('filePreview',function(item){
+				_self._previewFile(item.name,item.path,false);
+			});
+			// 文件下载
+			_self.on('fileDownload',function(item){
+				window.location = '/kmms/atachFile/download?name='+item.name+'&path='+item.path;
+			});
+			// 文件删除
+			_self.on('fileDel',function(item){
+				BUI.Message.Confirm('确认要删除文件么？',function(){
+		        	var pl = new PostLoad({
+						url : '/kmms/fileShareAction/deleteById',
+						el : _self.get('el'),
+        				loadMsg : '删除文件中...'
+					});
+					pl.load({id : item.id,collectionName : collectionName},function(data){
+						BUI.Message.Alert('删除成功','success');
+						_self.fire('fileDelOver');
+					});
+		        },'question');
+			});
+		},
+		/**
+		 * 使用pageoffice在线预览文件
+		 * @param name 文件中文名称
+		 * @param path 文件在服务器上的全路径，包含文件实际名称
+		 * @param isEdit 是否进行在线编辑
+		 */
+		_previewFile : function(name,path,isEdit){
+			//TODO 使用pageoffice在线预览文件
+			if(isEdit){
+				if(path){
+            		var tempv = window.open("../tempFileShow.html");
+            		tempv.location.href = '/pageoffice/?filePath='+path;
+            	}else{
+            		BUI.Message.Alert('文件损坏，请重新上传文件！');
+        			return;
+            	}
+			}else{
+				if(path){
+            		var tempv = window.open("../tempFileShow.html");
+            		tempv.location.href = '/pageoffice/openPage?filePath='+path;
+            	}else{
+            		BUI.Message.Alert('文件损坏，请重新上传文件！');
+        			return;
+            	}
+			}
+		}
+	},{
+		ATTRS : {
+			elStyle : {value : {'line-height': '25px'}},
+			height : {value : 30},
+			item : {},
+			buttonVisible : {},
+			/**
+			 * 当前权限ID
+			 */
+            perId : {},
+            /**
+			 * 当前用户Id
+			 */
+            userId : {},// 登录用户ID
+            orgId : {},// 登录用户组织机构ID
+            orgName : {},// 登录用户组织机构名称
+            collectionName : {},
+			events : {
+				value : {
+					'enterDirectory' : true,
+					'dicEditOver' : true,
+					'dicDelOver' : true,
+					'fileDelOver' : true,
+					'fileDel' : false,
+					'dicEdit' : false,
+					'fileEdit' : false,
+					'dicDel' : false,
+					'filePreview' : false,
+					'fileDownload' : false,
+				}
+            }
+		}
+	});
+	return fileRow;
+});

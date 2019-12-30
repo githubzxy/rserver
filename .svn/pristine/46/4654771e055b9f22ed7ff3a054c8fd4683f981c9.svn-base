@@ -1,0 +1,180 @@
+package com.enovell.yunwei.km_micor_service.dto.overhaulRecord;
+
+public enum HighTrainzjzWordCell {
+	htzjz_first_first_state(1,2),
+	htzjz_first_first_remark(1,3),
+	htzjz_first_second_state(2,2),
+	htzjz_first_second_remark(2,3),
+	htzjz_first_third_state(3,2),
+	htzjz_first_third_remark(3,3),
+	htzjz_first_fourth_state(4,2),
+	htzjz_first_fourth_remark(4,3),
+	 
+	htzjz_second_first_state(5,2),
+	htzjz_second_first_remark(5,3),
+	htzjz_second_second_state(6,2),
+	htzjz_second_second_remark(6,3),
+	htzjz_second_third_state(7,2),
+	htzjz_second_third_remark(7,3),
+	htzjz_second_fourth_state(8,2),
+	htzjz_second_fourth_remark(8,3),
+	htzjz_second_fifth_state(9,2),
+	htzjz_second_fifth_remark(9,3),
+	htzjz_second_sixth_state(10,2),
+	htzjz_second_sixth_remark(10,3),
+	htzjz_second_seventh_state(11,2),
+	htzjz_second_seventh_remark(11,3),
+	 
+	 htzjz_third_first_state(12,2), 
+	 htzjz_third_first_remark(12,3), 
+	 htzjz_third_second_state(13,2), 
+	 htzjz_third_second_remark(13,3), 
+	
+	 
+	 htzjz_fourth_first_state(14,2), 
+	 htzjz_fourth_first_remark(14,3), 
+	 htzjz_fourth_second_state(15,2),
+	 htzjz_fourth_second_remark(15,3), 
+	 htzjz_fourth_third_state(16,2), 
+	 htzjz_fourth_third_remark(16,3),
+	htzjz_fourth_fourth_state(17,2),
+	htzjz_fourth_fourth_remark(17,3),
+	htzjz_fourth_fifth_state(18,2),
+	htzjz_fourth_fifth_remark(18,3),
+	htzjz_fourth_sixth_state(19,2),
+	htzjz_fourth_sixth_remark(19,3),
+	htzjz_fourth_seventh_state(20,2),
+	htzjz_fourth_seventh_remark(20,3),
+	 
+	htzjz_fifth_first_state(21,2),
+	htzjz_fifth_first_remark(21,3),
+	htzjz_fifth_second_state(22,2),
+	htzjz_fifth_second_remark(22,3),
+	htzjz_fifth_third_state(23,2),
+	htzjz_fifth_third_remark(23,3),
+	htzjz_fifth_fourth_state(24,2),
+	htzjz_fifth_fourth_remark(24,3),
+	htzjz_fifth_fifth_state(25,2),
+	htzjz_fifth_fifth_remark(25,3),
+	
+	 
+	 htzjz_sixth_first_state(26,2), 
+	 htzjz_sixth_first_remark(26,3), 
+	 htzjz_sixth_second_state(27,2), 
+	 htzjz_sixth_second_remark(27,3), 
+	 htzjz_sixth_third_state(28,2), 
+	 htzjz_sixth_third_remark(28,3), 
+	 
+	 htzjz_seventh_first_state(29,2), 
+	 htzjz_seventh_first_remark(29,3), 
+	 htzjz_seventh_second_state(30,2), 
+	 htzjz_seventh_second_remark(30,3), 
+	 htzjz_seventh_third_state(31,2), 
+	 htzjz_seventh_third_remark(31,3), 
+	 
+	 htzjz_eighth_first_state(32,2), 
+	 htzjz_eighth_first_remark(32,3), 
+	 htzjz_eighth_second_state(33,2), 
+	 htzjz_eighth_second_remark(33,3), 
+	 htzjz_eighth_third_state(34,2), 
+	 htzjz_eighth_third_remark(34,3), 
+	 htzjz_eighth_fourth_state(35,2),
+	 htzjz_eighth_fourth_remark(35,3),
+	 
+	 htzjz_ninth_first_state(36,2), 
+	 htzjz_ninth_first_remark(36,3), 
+	 htzjz_ninth_second_state(37,2), 
+	 htzjz_ninth_second_remark(37,3), 
+	 htzjz_ninth_third_state(38,2),
+	 htzjz_ninth_third_remark(38,3),
+	 htzjz_ninth_fourth_state(39,2),
+	 htzjz_ninth_fourth_remark(39,3),
+	 htzjz_ninth_fifth_state(40,2),
+	 htzjz_ninth_fifth_remark(40,3),
+	 htzjz_ninth_sixth_state(41,2),
+	 htzjz_ninth_sixth_remark(41,3),
+	 htzjz_ninth_seventh_state(42,2),
+	 htzjz_ninth_seventh_remark(42,3),
+	 
+	 htzjz_tenth_first_state(43,2), 
+	 htzjz_tenth_first_remark(43,3), 
+	 htzjz_tenth_second_state(44,2), 
+	 htzjz_tenth_second_remark(44,3), 
+	 htzjz_tenth_third_state(45,2), 
+	 htzjz_tenth_third_remark(45,3),
+	 
+	htzjz_eleventh_first_state(46,2),
+	htzjz_eleventh_first_remark(46,3),
+	htzjz_eleventh_second_state(47,2),
+	htzjz_eleventh_second_remark(47,3),
+	htzjz_eleventh_third_state(48,2),
+	htzjz_eleventh_third_remark(48,3),
+	
+	 htzjz_twelfth_first_state(49,2),
+	 htzjz_twelfth_first_remark(49,3),
+	 htzjz_twelfth_second_state(50,2),
+	 htzjz_twelfth_second_remark(50,3),
+	 htzjz_twelfth_third_state(51,2),
+	 htzjz_twelfth_third_remark(51,3),
+	 htzjz_twelfth_fourth_state(52,2),
+	 htzjz_twelfth_fourth_remark(52,3),
+	 
+	htzjz_thirteenth_first_state(53,2),
+	htzjz_thirteenth_first_remark(53,3),
+	htzjz_thirteenth_second_state(54,2),
+	htzjz_thirteenth_second_remark(54,3),
+	htzjz_thirteenth_third_state(55,2),
+	htzjz_thirteenth_third_remark(55,3),
+	
+	 htzjz_fourteenth_first_state(56,2),
+	 htzjz_fourteenth_first_remark(56,3),
+	 htzjz_fourteenth_second_state(57,2),
+	 htzjz_fourteenth_second_remark(57,3),
+	 htzjz_fourteenth_third_state(58,2),
+	 htzjz_fourteenth_third_remark(58,3),
+	 
+	htzjz_fifteenth_first_state(59,2),
+	htzjz_fifteenth_first_remark(59,3),
+	htzjz_fifteenth_second_state(60,2),
+	htzjz_fifteenth_second_remark(60,3),
+	htzjz_fifteenth_third_state(61,2),
+	htzjz_fifteenth_third_remark(61,3),	
+	
+	 htzjz_sixteenth_first_state(62,2),
+	 htzjz_sixteenth_first_remark(62,3),
+	 htzjz_sixteenth_second_state(63,2),
+	 htzjz_sixteenth_second_remark(63,3),
+	 htzjz_sixteenth_third_state(64,2),
+	 htzjz_sixteenth_third_remark(64,3),
+	 
+	htzjz_seventeenth_first_state(65,2),
+	htzjz_seventeenth_first_remark(65,3),
+	htzjz_seventeenth_second_state(66,2),
+	htzjz_seventeenth_second_remark(66,3),
+	htzjz_seventeenth_third_state(67,2),
+    htzjz_seventeenth_third_remark(67,3),
+	htzjz_seventeenth_fourth_state(68,2),
+	htzjz_seventeenth_fourth_remark(68,3);
+	
+		
+		private int row;
+		private int col;
+		
+		private HighTrainzjzWordCell(int row,int col) {
+			this.row = row;
+			this.col = col;
+		}
+		public int getRow() {
+			return row;
+		}
+		public void setRow(int row) {
+			this.row = row;
+		}
+		public int getCol() {
+			return col;
+		}
+		public void setCol(int col) {
+			this.col = col;
+		}
+		
+}

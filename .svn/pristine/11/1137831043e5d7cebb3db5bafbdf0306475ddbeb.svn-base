@@ -1,0 +1,254 @@
+/**
+ * 编辑日志记录
+ * @author zhouxingyu
+ * @date 19-4-1
+ */
+define('kmms/productionManage/JobRecord/jobRecordUpdate', ['bui/common', 'common/form/FormContainer', 'bui/form',
+    'bui/form', 'common/org/OrganizationPicker', 'bui/data', 'kmms/productionManage/JobRecord/SelectSuggest'
+], function(r) {
+    var BUI = r('bui/common'),
+        OrganizationPicker = r('common/org/OrganizationPicker'),
+        Data = r('bui/data'),
+        SelectSuggest = r('kmms/productionManage/JobRecord/SelectSuggest'),
+        Form = r('bui/form'),
+        FormContainer = r('common/form/FormContainer');
+    var jobRecordUpdate = BUI.Overlay.Dialog.extend({
+        initializer: function() {
+            var _self = this;
+            _self.addChild(_self._initFormContainer());
+        },
+        renderUI: function() {
+            var _self = this;
+            _self._getShowData();
+        },
+        bindUI: function() {
+            var _self = this;
+            //定义按键
+            var buttons = [{
+                text: '保存',
+                elCls: 'button',
+                handler: function() {
+                    var success = _self.get('success');
+                    if (success) {
+                        success.call(_self);
+                    }
+                }
+            }, {
+                text: '关闭',
+                elCls: 'button',
+                handler: function() {
+                    if (this.onCancel() !== false) {
+                        this.close();
+                    }
+                }
+            }];
+            _self.set('buttons', buttons);
+        },
+        /**
+         * 初始化项目
+         */
+        _initProject: function(project) {
+            var nameData = ['值班情况', '日常维修工作', '故障处理', '专项活动', '施工配合', '重要文电学习', '外出培训学习情况', '休假情况', '其他'];
+            /**
+             * 初始化线别
+             */
+            var suggest = new SelectSuggest({
+                renderName: '#projectDiv2',
+                inputName: 'projectEdit',
+                renderData: nameData,
+                width: 238
+            });
+            $("input[name='projectEdit']").val(project);
+        },
+        /**
+         * 获取显示数据
+         */
+        _getShowData: function() {
+            var _self = this,
+                shiftId = _self.get('shiftId'),
+                delData = {};
+            $.ajax({
+                url: '/kmms/commonAction/findById',
+                data: { id: shiftId, collectionName: _self.get('collectionName') },
+                type: 'post',
+                async: false,
+                dataType: "json",
+                success: function(res) {
+                    var data = res.data;
+                    if (data) {
+                        _self._initProject(data.project);
+                        $("#formContainer #workArea").val(data.workArea);
+                        $("#formContainer #date").val(data.date);
+                        $("#formContainer #onlineNumber").val(data.onlineNumber);
+                        $("#formContainer #content").val(data.content);
+                        $("#formContainer #joiner").val(data.joiner);
+                        $("#formContainer #joinerNumber").val(data.joinerNumber);
+                        $("#formContainer #orgName").val(data.orgName);
+                    }
+                }
+            })
+        },
+        /**
+         * 渲染上传按钮
+         */
+        _renderUploadView(file, col) {
+            var _self = this,
+                html = "";
+            html += '<input name="' + col + '" type="file" multiple accept=".doc,.docx,.xls,.xlsx,.ppt,.pptx"/>';
+            file.forEach(function(f) {
+                html += '<div class="success">' +
+                    '<label id="' + f.id + '" class="fileLabel" title=' + f.name + '>' + f.name + '</label>' +
+                    '<span style="float: right;" >' +
+                    '<a class="editBtn" target="_blank" href="/pageoffice/?filePath=' + f.path + '" data-col="' + col + '" data-id="' + f.id + '">编辑    </a>' +
+                    '<a class="delFileBtn" data-col="' + col + '" data-id="' + f.id + '">删除</a>' +
+                    '</span>' +
+                    '</div>';
+            });
+            return html;
+        },
+        /**
+         * 删除文件
+         */
+        _delFile: function(e, self) {
+            var delData = self.get('delData'),
+                tdata = e.target.dataset;
+            delData[tdata.col].push(tdata.id);
+            $(e.target).parents('.success').remove();
+        },
+
+        /**
+         * 初始化组织机构选择
+         * @private
+         */
+        _initOrganizationPicker: function() {
+            var _self = this;
+            var orgPicker = new OrganizationPicker({
+                trigger: '#formContainer #orgSelectName',
+                rootOrgId: _self.get('rootOrgId'), //必填项
+                rootOrgText: _self.get('rootOrgText'), //必填项
+                url: '/kmms/commonAction/getChildrenByPidAndCurId', //必填项
+                autoHide: true,
+                align: {
+                    points: ['bl', 'tl']
+                },
+                zIndex: '10000',
+                width: 493,
+                height: 200
+            });
+            orgPicker.render();
+            _self.set('orgPicker', orgPicker);
+        },
+
+        /**
+         * 初始化FormContainer
+         */
+        _initFormContainer: function() {
+            var _self = this;
+            var colNum = 2;
+            var childs = [{
+                label: '工长：',
+                redStarFlag: true,
+                itemColspan: 1,
+                item: '<input type="text" name="workArea" id="workArea" style="width:99%"  data-rules="{required:true}"/>',
+            }, {
+                label: '在册人数：',
+                redStarFlag: true,
+                itemColspan: 1,
+                item: '<input type="text" name="onlineNumber" id="onlineNumber" style="width:99%" data-rules="{required:true}"/>',
+            }, {
+                label: '时间：',
+                redStarFlag: true,
+                itemColspan: 1,
+                item: '<input type="text" name="date" id="date" class="calendar"  data-rules="{required:true}" />',
+            }, {
+                label: '项目：',
+                itemColspan: 1,
+                redStarFlag: true,
+                item: '<div name="projectDiv2" id="projectDiv2"/>'
+            }, {
+                label: '填报部门：',
+                redStarFlag: true,
+                itemColspan: 1,
+                item: '<input  type="text" name="orgName" id="orgName" style="width:99%" readOnly/>',
+            }, {
+                label: '人数：',
+                redStarFlag: true,
+                itemColspan: 1,
+                item: '<input  type="text" name="joinerNumber" id="joinerNumber" style="width:99%" data-rules="{required:true}"/>',
+            }, {
+                label: '具体内容：',
+                redStarFlag: true,
+                itemColspan: 2,
+                item: '<textarea  name="content" id="content" style="width:99.5%;border:none;width: 99.5%;resize: none;" data-rules="{required:true}"/>',
+            }, {
+                label: '人员姓名：',
+                redStarFlag: true,
+                itemColspan: 2,
+                item: '<textarea style="border:none;width: 99.5%;resize: none;" id="joiner" name="joiner" maxlength="900" data-rules="{required:true}">',
+            }];
+            var form = new FormContainer({
+                id: 'jobRecordUpdate',
+                colNum: colNum,
+                formChildrens: childs,
+            });
+            _self.set('formContainer', form);
+            return form;
+        }
+    }, {
+        ATTRS: {
+            id: { value: 'shiftAddDialog' },
+            elAttrs: { value: { id: "shiftAdd" } },
+            title: { value: '编辑日志' },
+            width: { value: 650 },
+            height: { value: 320 },
+            contextPath: {},
+            closeAction: { value: 'destroy' }, //关闭时销毁加载到主页面的HTML对象
+            mask: { value: true },
+            collectionName: {},
+            shiftId: {},
+            projectVal: {},
+            userId: {},
+            success: {
+                value: function() {
+                    var _self = this;
+                    var formAdd = _self.getChild('jobRecordUpdate'),
+                        delData = _self.get('delData');
+                    //验证不通过
+                    if (!formAdd.isValid()) {
+                        return;
+                    }
+                    var formData = new FormData(formAdd.get('el')[0]);
+                    formData.append('collectionName', _self.get('collectionName'));
+                    formData.append('userId', _self.get('userId'));
+                    formData.append('id', _self.get('shiftId'));
+                    for (var key in delData) {
+                        formData.append('del-' + key, delData[key].join(","));
+                    }
+                    var xhr = new XMLHttpRequest();
+                    xhr.open("POST", "/zuul/kmms/jobRecordAction/modifyDoc");
+                    xhr.send(formData);
+                    xhr.onload = function(e) {
+                        if (e.target.response) {
+                            var result = JSON.parse(e.target.response);
+                            _self.fire("completeAddSave", {
+                                result: result
+                            });
+                        }
+                    }
+                }
+            },
+            events: {
+                value: {
+                    /**
+                     * 绑定保存按钮事件
+                     */
+                    'completeAddSave': true,
+
+                }
+            },
+            rootOrgId: { value: '8affa073533aa3d601533bbef63e0010' },
+            rootOrgText: { value: '昆明通信段' },
+        }
+    });
+    return jobRecordUpdate;
+});

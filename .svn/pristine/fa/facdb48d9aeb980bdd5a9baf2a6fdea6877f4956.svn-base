@@ -1,0 +1,86 @@
+package com.enovell.yunwei.km_micor_service.service.technical.deviceNameWorkManage;
+
+import java.util.List;
+
+import org.apache.commons.lang3.StringUtils;
+import org.bson.Document;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
+import org.springframework.stereotype.Service;
+
+@Service("deviceNameWorkManageService")
+public class DeviceNameWorkManageServiceImpl implements DeviceNameWorkManageService{
+	 @Autowired
+	 private MongoTemplate mt;
+
+	@Override
+	public Document addDocument(Document document, String collectionName) {
+		document.put("status", 1);
+		mt.save(document,collectionName);
+		return document;
+	}
+
+	@Override
+	public Long findAllDocumentCount(String collectionName, String deviceName, String workContent) {
+		Criteria criteria = getCriteriaQuery(deviceName,workContent);
+		Long cout = mt.count(new Query(criteria),collectionName);
+		return cout;
+	}
+
+	@Override
+	public List<Document> findAllDocument(String collectionName, String deviceName, String workContent, int start,
+			int limit) {
+		Criteria criteria = getCriteriaQuery(deviceName,workContent);
+		List<Document> resultDocuments = mt.find(new Query(criteria).skip(start).limit(limit), Document.class,collectionName);
+		resultDocuments.stream().forEach(d -> {
+            d.append("docId", d.getObjectId("_id").toHexString());
+            d.remove("_id");
+        });
+		return resultDocuments;
+	}
+
+	private Criteria getCriteriaQuery(String deviceName, String workContent) {
+		Criteria criteria = Criteria.where("status").is(1);
+		if (StringUtils.isNoneBlank(deviceName)) {
+			criteria.and("deviceName").regex(deviceName);
+		}
+		if (StringUtils.isNoneBlank(workContent)) {
+			criteria.and("workContent").regex(workContent);
+		}
+		return criteria;
+	}
+
+	@Override
+	public Document findDocumentById(String id, String collectionName) {
+		Document doc = mt.findOne(new Query(Criteria.where("_id").is(id).and("status").is(1)), Document.class, collectionName);
+		doc.append("docId", doc.getObjectId("_id").toHexString());
+        doc.remove("_id");
+		return doc;
+	}
+
+	@Override
+	public Document modifyDocument(Document document, String collectionName,String id) {
+		Query query = new Query(Criteria.where("_id").is(id).and("status").is(1));
+		Update update = new Update();
+        update.set("deviceName", document.get("deviceName"));
+        update.set("workContent", document.get("workContent"));
+        update.set("yearOrMonth", document.get("yearOrMonth"));
+        update.set("type", document.get("type"));
+        update.set("countYear", document.get("countYear"));
+        update.set("unit", document.get("unit"));
+        update.set("remark", document.get("remark"));
+        update.set("status", document.get("status"));
+		mt.updateFirst(query, update, collectionName);
+		return document;
+	}
+
+	@Override
+	public void removeDocument(List<String> ids, String collectionName) {
+		Query query = Query.query(Criteria.where("_id").in(ids));
+		mt.remove(query,collectionName);
+	}
+	 
+}

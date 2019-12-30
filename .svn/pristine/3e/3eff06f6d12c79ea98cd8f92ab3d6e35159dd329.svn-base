@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>考勤管理</title>
+    <link rel="stylesheet" th:href="@{/bui/css/bs3/dpl.css}" />
+    <link rel="stylesheet" th:href="@{/bui/css/bs3/bui.css}" />
+    <script charset="utf-8" th:src="@{/common/sq.js}"></script>
+</head>
+<body>
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    seajs.config({
+        paths : {
+            common : "/common",
+            kmms : "/kmms",
+            bui : "/bui"
+        }
+    });
+    seajs.use('kmms/integratedManage/attendanceManage/attendanceManagePage',function(Main){
+//     seajs.use('kmms/integratedManage/attendanceManage/resTransmission',function(Main){
+        var main = new Main({
+        	perId : [[${perId}]],
+        	userId : [[${userId}]],
+        	userName : [[${userName}]],
+        	orgId : [[${orgId}]],
+        	orgName : [[${orgName}]],
+        	parentId : [[${parentId}]]
+        });
+        main.render();
+    });
+    /*]]>*/
+</script>
+</body>
+</html>

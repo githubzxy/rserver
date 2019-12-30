@@ -1,0 +1,43 @@
+package com.enovell.yunwei.km_micor_service.service.integratedManage.attendanceManage;
+
+import java.util.List;
+
+import org.bson.Document;
+
+public interface AttendanceManageCollectQueryService {
+	
+	/**
+	 * 根据id修改数据
+	 * @param id
+	 * @return
+	 */
+	Document findDatasById(String id,String collectionName);
+	/**
+	 * 修改数据
+	 * @param doc
+	 * @param collectionName
+	 * @return
+	 */
+	Document updateCollectDocument(Document doc, String collectionName);
+	
+	/**
+	 * 分页查询
+	 * @return
+	 */
+	long findAllDataCount(String attendanceManageCollect, String orgId, int orgType, String startUploadDate, String endUploadDate);
+	List<Document> findAllData(String attendanceManageCollect, String orgId, int orgType, String startUploadDate, String endUploadDate,int start, int limit);
+	
+	/**
+	 * 将审核通的考情汇总表中的出勤缺勤数据存入数据库
+	 */
+	void importSumData(String filePath,String date,String attendanceOrgName,String attendanceOrgId);
+	
+	/**
+	 * 生成考勤统计表用于财务使用的
+	 * @param year
+	 * @param month
+	 * @param attendanceManageSum
+	 * @return 生成文件的路径
+	 */
+	String collectTable(String year, String month, String attendanceManageSum);
+}

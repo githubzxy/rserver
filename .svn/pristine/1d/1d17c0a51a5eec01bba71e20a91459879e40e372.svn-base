@@ -1,0 +1,97 @@
+package com.enovell.yunwei.km_micor_service.action.securityManage.troubleQuery;
+
+import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.bson.Document;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.enovell.yunwei.km_micor_service.dto.GridDto;
+import com.enovell.yunwei.km_micor_service.dto.ResultMsg;
+import com.enovell.yunwei.km_micor_service.dto.dayToJobManageDto.TroubleQueryDto;
+import com.enovell.yunwei.km_micor_service.service.securityManage.troubleQuery.TroubleQueryService;
+/**
+ * 
+ * 项目名称：km_micor_service
+ * 类名称：TroubleQueryAction   
+ * 类描述:  事故故障障碍功能模块信息基本操作及导入导出
+ * 创建人：zhouxingyu
+ * 创建时间：2019年3月24日 下午5:14:53
+ * 修改人：zhouxingyu 
+ * 修改时间：2019年3月24日 下午5:14:53   
+ *
+ */
+@RestController
+@RequestMapping("/troubleQueryAction")
+public class TroubleQueryAction {
+	@Resource(name = "troubleQueryService")
+    private TroubleQueryService service;
+	
+	@PostMapping("/findAll")
+    public GridDto<Document> findAll(
+                                     @RequestParam String collectionName,
+                                     String startUploadDate,
+                                     String endUploadDate,
+                                     String troubleObligationDepart,
+                                     String troubleLineName,
+                                     String troubleSite,
+                                     String troubleGeneral,
+                                     @RequestParam int start, @RequestParam int limit) {
+        GridDto<Document> result = new GridDto<>();
+        result.setResults(service.findAllDocumentCount(collectionName, startUploadDate, endUploadDate, troubleObligationDepart,troubleLineName,troubleSite,troubleGeneral));
+        result.setRows(service.findAllDocument(collectionName, startUploadDate,endUploadDate,troubleObligationDepart,troubleLineName,troubleSite,troubleGeneral,start,limit));
+        return result;
+    }
+	
+	@PostMapping("/findById")
+    public ResultMsg findDocById(
+    							@RequestParam("id") String id,
+    							@RequestParam("collectionName") String collectionName) {
+        Document result = service.findDocumentById(id, collectionName);
+        return ResultMsg.getSuccess("查询完成", result);
+    }
+	/**
+	 * 
+	 * exportDataToExcel 导出excel
+	 * 
+	 * @param request
+	 * @param response
+	 */
+	@RequestMapping("/exportFrom")
+	@ResponseBody
+	public ResultMsg txdWriteBusiWord(@RequestParam("id") String id,
+			@RequestParam("collectionName") String collectionName,
+			HttpServletRequest request,
+			HttpServletResponse response)  {
+    	Document result = service.findDocumentById(id, collectionName);
+    	TroubleQueryDto dto =new TroubleQueryDto();
+    	//将查询到的文档装换为dto
+    	dto.setObligationDepart((String) result.get("troubleObligationDepart"));
+    	dto.setTroubleLineName((String) result.get("troubleLineName"));
+    	dto.setTroubleDate((String) result.get("troubleDate"));
+    	
+    	dto.setTroubleDevice((String) result.get("troubleDevice"));
+    	dto.setTroubleSite((String) result.get("troubleSite"));
+    	dto.setTroubleGeneral((String) result.get("troubleGeneral"));
+    	dto.setTroubleOccurDate((String) result.get("troubleOccurDate"));
+    	
+    	dto.setTroubleRecoverDate((String) result.get("troubleRecoverDate"));
+    	dto.setTroubleDelayMinutes((String) result.get("troubleDelayMinutes"));
+    	dto.setTroubleTrainNumber((String) result.get("troubleTrainNumber"));
+    	dto.setTroubleDisposePass((String) result.get("troubleDisposePass"));
+    	
+    	dto.setTroubleReasonAnalyse((String) result.get("troubleReasonAnalyse"));
+    	dto.setTroubleMeasure((String) result.get("troubleMeasure"));
+    	dto.setTroubleFixDuty((String) result.get("troubleFixDuty"));
+    	dto.setTroubleCheckSituation((String) result.get("troubleCheckSituation"));
+    	dto.setTroubleRemark((String) result.get("troubleRemark"));
+    	
+    	return service.exportTable(dto);
+    	
+	}
+}

@@ -1,0 +1,377 @@
+/**
+ * 修改
+ * @author yangli
+ * @date 19-3-4
+ */
+define('kmms/constructProtocol/ConstructProtocolEdit',['bui/common','common/form/FormContainer','common/data/PostLoad',
+    'bui/form','bui/calendar','bui/data','bui/select','common/org/OrganizationPicker','common/uploader/UpdateUploader'],function(r){
+    var BUI = r('bui/common'),
+    	Calendar = r('bui/calendar'),
+    	Select = r('bui/select'),
+    	OrganizationPicker = r('common/org/OrganizationPicker'),
+    	Data = r('bui/data'),
+        FormContainer= r('common/form/FormContainer'),
+        PostLoad = r('common/data/PostLoad'),
+        UpdateUploader = r('common/uploader/UpdateUploader');
+    var ConstructProtocolEdit = BUI.Overlay.Dialog.extend({
+        initializer : function(){
+            var _self = this;
+            _self.addChild(_self._initFormContainer());
+        },
+        renderUI:function(){
+			var _self=this;
+			_self._initDate();
+			_self._getShowData();
+        },
+        bindUI : function(){
+            var _self = this;
+            
+            //定义按键
+            var buttons = [
+                {
+                    text:'保存',
+                    elCls : 'button',
+                    handler : function(){
+                        var success = _self.get('success');
+                        if(success){
+                            success.call(_self);
+                        }
+                    }
+                },{
+                    text:'关闭',
+                    elCls : 'button',
+                    handler : function(){
+                        if(this.onCancel() !== false){
+                            this.close();
+                        }
+                    }
+                }
+            ];
+            _self.set('buttons',buttons);
+           
+            
+        },
+        _selectChangeEvent:function(ev){
+			var _self = this;
+			var selectLines=ev.text;
+			_self.set("selectLines",selectLines);
+		},
+		_selectCJChangeEvent:function(ev){
+			var _self = this;
+			var selectWorkShop=ev.text;
+			_self.set("selectWorkShop",selectWorkShop);
+		},
+       
+		/**
+		 * 初始化车间store
+		 */
+		_initWorkShopStore:function(){
+			var _self = this;
+//			var orgName=$("#depart").val();
+			var store = new Data.Store({
+			    url : '/kmms/constructProtocolAction/getworkShop', 
+			    autoLoad : true,    
+			    proxy : {
+			      method : 'post',
+			      dataType : 'json'
+			    }
+			});
+			_self.set('workShopStore',store);
+			_self._getWorkShop();
+		},
+		/**
+		 * 初始化线别store
+		 */
+		_initLineStore:function(){
+			var _self = this;
+//			var orgName=$("#depart").val();
+			var store = new Data.Store({
+				url : '/kmms/constructProtocolAction/getLines', 
+				autoLoad : true,    
+				proxy : {
+					method : 'post',
+					dataType : 'json'
+				}
+			});
+			_self.set('lineStore',store);
+			_self._getLine();
+		},
+		 /**
+         * 初始化车间下拉选
+         */
+        _getWorkShop:function(){
+			var _self = this, workShopStore = _self.get('workShopStore');
+			var render = $('#workShopId');
+			var valueField = $('#cj');
+			var select = new Select.Select({
+		          render:render,
+		          valueField:valueField,
+		          multipleSelect:true,
+		          store:workShopStore
+		    });
+		    select.render();
+		    _self.set("workShopSelect",select);
+		    _self._initCssOfSelect();
+		},
+		/**
+		 * 初始化线别下拉选
+		 */
+		_getLine:function(){
+			var _self = this, lineStore = _self.get('lineStore');
+			var render = $('#lineId');
+			var valueField = $('#xb');
+			var select = new Select.Select({
+				render:render,
+				valueField:valueField,
+				multipleSelect:true,
+				store:lineStore
+			});
+			select.render();
+			_self.set("lineSelect",select);
+			_self._initCssOfSelect();
+		},
+		//初始化select下拉选的样式
+		_initCssOfSelect:function(){
+			$(".bui-select").css("width","99%");
+		    $(".bui-select span").css("border","white");
+		    $(".bui-select-input").css("width","99%");
+		    $(".bui-select span").css("display","none");
+		    $(".bui-select-list").css("overflow-y","auto");
+		    $(".bui-select-list").css("height","270px");
+		},
+        /**
+         * 获取显示数据
+         */
+        _getShowData : function(){
+        	 var _self = this,shiftId = _self.get('shiftId');
+//           var delData={};
+           $.ajax({
+               url:'/kmms/commonAction/findById',
+               data:{id : shiftId,collectionName:_self.get('collectionName')},
+               type:'post',
+               dataType:"json",
+                success:function(res){
+                    if(res){
+                    	var data=res.data;
+                    	_self._initLineStore();
+                    	_self._initWorkShopStore();
+                    	$("#formContainer #proName").val(data.proName);
+                        $("#formContainer #proCompany").val(data.proCompany);
+                        $("#formContainer #beginDate").val(data.beginDate);
+                        $("#formContainer #overDate").val(data.overDate);
+                        $("#formContainer #proPlace").val(data.proPlace);
+                    	$('#formContainer #xb').val(data.line);
+            		    $('#formContainer #cj').val(data.workShop);
+            		    $('#formContainer #isContract').val(data.isContract);
+            		    $("#isContract option[value='"+data.isContract+"']").attr("selected","selected");
+            		    if(data.uploadFileArr) {
+            				_self._initUploader(data.uploadFileArr);
+            			}
+            		    var lineSelect = _self.get("lineSelect");
+                    	var workShopSelect = _self.get("workShopSelect");
+                       /**
+                       * 线别下拉选值获取
+                       */
+                    	lineSelect.on('change', function(ev){
+            				_self._selectChangeEvent(ev);
+            		    });
+                    	/**
+                    	 * 车间下拉选值获取
+                    	 */
+                    	workShopSelect.on('change', function(ev){
+                    		_self._selectCJChangeEvent(ev);
+                    	});
+                    }
+                }
+            })
+        },
+        /**
+		 * 初始化上传文件
+		 */
+		_initUploader:function(uploadFiles){
+			var _self = this;
+			var uploader = new UpdateUploader({
+				render : '#formContainer #uploadfile',
+		        url : '/zuul/kmms/atachFile/upload.cn',
+		        alreadyItems : uploadFiles,
+		        isSuccess : function(result){
+					return true;
+		        },
+			});
+			uploader.render();
+			_self.set('uploader',uploader);
+		},
+		 /**
+		 * 获取上传文件数据(上传的)
+		 */
+		_getUploadFileData : function(){
+			var _self = this,uploader = _self.get('uploader');
+			var arr = new Array(); //声明数组,存储数据发往后台
+			//获取上传文件的队列
+			var fileArray = uploader.getSucFiles();
+			for(var i in fileArray){
+		    	var dto = new _self._UploadFileDto(fileArray[i].name,fileArray[i].path); //声明对象
+				arr[i] = dto; // 向集合添加对象
+			};
+			return arr;
+		},
+		/**
+		  * 声明上传文件对象
+		  * @param name 上传文件名
+		  * @param path 上传文件路径
+		  */
+		_UploadFileDto : function(name,path){
+			this.name = name;
+			this.path = path;
+		},
+        
+        
+        _initDate: function () {
+            var _self = this;
+            var date = new Calendar.DatePicker({//加载日历控件
+                trigger: '#formContainer #date',
+                showTime: false,
+                autoRender: true,
+                textField:'#formContainer #date'
+            });
+            _self.set('date', date);
+        },
+        
+        /**
+         * 初始化FormContainer
+         */
+        _initFormContainer : function(){
+            var _self = this;
+            var colNum = 2;
+            var childs = [
+            	 {
+                     label : '协议名称：',
+//                     redStarFlag : true,
+                     itemColspan : 1,
+                     item : '<input type="text"  name="proName" id="proName"  style="width:99.5%"  />'
+                 },{
+                     label : '施工单位：',
+//                     redStarFlag : true,
+                     itemColspan : 1,
+                     item : '<input type="text" name="proCompany" id="proCompany" style="width: 225px;"/>'
+                 },{
+                     label : '所属线别：',
+//                   redStarFlag : true,
+                   itemColspan : 1,
+                   item : '<div id="lineId" >'+
+                 	  '<input  name="line" id="xb" style="width:99%;height:27px;" readonly="readonly" type="hidden"/>'+
+                 	  '</div>'
+               },{
+                     label : '责任车间：',
+//                     redStarFlag : true,
+                     itemColspan : 1,
+                     item : '<div id="workShopId" >'+
+               	  '<input   name="workShop" id="cj" style="width:99%;height:27px;" readonly="readonly" type="hidden"/>'+
+             	  '</div>'
+                 },{
+                     label : '开工日期：',
+//                   redStarFlag : true,
+ 	                itemColspan : 1,
+ 	                item : '<input type="text" name="beginDate" id="beginDate" class="calendar" style="width: 99%;" readonly/>'
+               },{
+ 	                label : '竣工日期：',
+ 	//              redStarFlag : true,
+ 	                itemColspan : 1,
+ 	                item : '<input type="text" name="overDate" id="overDate" class="calendar" style="width: 99%;" readonly/>'
+               },{
+                     label : '工程地点：',
+//                   redStarFlag : true,
+                     itemColspan : 1,
+                     item : '<input type="text" name="proPlace" id="proPlace" style="width: 99.5%;"/>'
+               },{
+                   label : '是否签订技术服务合同：',
+//                 redStarFlag : true,
+                   itemColspan : 1,
+                   item : '<select type="text" name="isContract" id="isContract" style="width: 99.5%;">'+
+                   '<option value="">请选择</option>'+
+                   '<option value="是">是</option>'+
+                   '<option value="否">否</option></select>'
+             },{
+                   label : '上传附件：',
+                   itemColspan : 2,
+                   item : '<div name="uploadfile" id="uploadfile" style="height:100px;overflow-y:auto"></div>'
+               }
+            ];
+            var form = new FormContainer({
+                id : 'constructProtocolEditForm',
+                colNum : colNum,
+                formChildrens : childs,
+//                elStyle:{overflowY:'scroll',height:'400px'}
+            });
+            _self.set('formContainer',form);
+            return form;
+        }
+    },{
+        ATTRS : {
+            id : {value : 'constructProtocolEditDialog'},
+            elAttrs : {value: {id:"constructProtocolEdit"}},
+            title:{value:'修改'},
+            width:{value:660},
+            height:{value:340},
+            contextPath : {},
+            closeAction : {value:'destroy'},//关闭时销毁加载到主页面的HTML对象
+            mask : {value:true},
+            collectionName:{},
+            userId:{},//登录用户ID
+            userName:{},//登录用户名称
+            orgId:{},//登录用户组织机构ID
+            orgName:{},//登录用户组织机构名称
+            shiftId:{},
+//            userId:{},
+            success:{
+               value : function(){
+                var _self = this;
+                var formAdd = _self.getChild('constructProtocolEditForm');
+                //获取上传文件
+        		var uploadFileArr = _self._getUploadFileData();
+                //验证不通过
+        		if(!formAdd.isValid()){
+        			return;
+        		}
+        		//序列化表单成对象，所有的键值都是字符串
+    	    	var data = formAdd.serializeToObject();
+        		data.uploadFileArr=JSON.stringify(uploadFileArr);
+        		data.collectionName=_self.get('collectionName');
+        		data.id=_self.get('shiftId');
+        		data.uploadFileArr=JSON.stringify(uploadFileArr);
+        		data.collectionName=_self.get('collectionName');
+        		data.line=_self.get('selectLines');
+        		data.workShop=_self.get('selectWorkShop');
+        		data.userId=_self.get('userId');
+        		console.log(data);
+        		var pl = new PostLoad({
+    				url : '/zuul/kmms/constructProtocolAction/updateDoc',
+    				el : _self.get('el'),
+    				loadMsg : '上传中...'
+    			}); 
+    			pl.load(data, function(e){
+    				if (e) {
+                        _self.fire("completeAddSave",{
+                            result : e
+                        });
+                    }
+    			});
+                
+
+            }
+            },
+            events : {
+                value : {
+                    /**
+                     * 绑定保存按钮事件
+                     */
+                    'completeAddSave' : true,
+
+                }
+            },
+//            rootOrgId:{value:'8affa073533aa3d601533bbef63e0010'},
+//            rootOrgText:{value:'昆明通信段'},
+        }
+    });
+    return ConstructProtocolEdit;
+});

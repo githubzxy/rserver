@@ -1,0 +1,92 @@
+package com.enovell.yunwei.km_micor_service.service.integratedManage.attendanceManage;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.commons.lang.StringUtils;
+import org.bson.Document;
+import org.bson.conversions.Bson;
+import org.bson.types.ObjectId;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+import com.mongodb.Block;
+import com.mongodb.MongoClient;
+import com.mongodb.client.FindIterable;
+import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.model.Filters;
+
+@Service("attendanceManageCollectQueryService")
+public class AttendanceManageCollectQueryServiceImpl implements AttendanceManageCollectQueryService {
+	 @Value("${spring.data.mongodb.host}")
+	 private String mongoHost;
+	 @Value("${spring.data.mongodb.port}")
+	 private int mongoPort;
+	 @Value("${spring.data.mongodb.database}")
+	 private String mongoDatabase;
+	 @Value("${attendanceModelPath}")
+	private String attendanceModelPath;
+	@Value("${createPath}")
+	private String createPath;
+
+	@Override
+	public Document findDatasById(String id, String collectionName) {
+		try(MongoClient mc = new MongoClient(mongoHost,mongoPort)){
+            MongoDatabase md = mc.getDatabase(mongoDatabase);
+            FindIterable<Document> findIterable = md.getCollection(collectionName).find(new Document("_id", new ObjectId(id)).append("status",1));
+            Document doc = findIterable.first();
+            doc.append("docId",doc.getObjectId("_id").toHexString());
+            doc.remove("_id");
+            return doc;
+        }
+	}
+
+	@Override
+	public Document updateCollectDocument(Document doc, String collectionName) {
+		try(MongoClient mc = new MongoClient(mongoHost,mongoPort)){
+			MongoDatabase md = mc.getDatabase(mongoDatabase);
+			return md.getCollection(collectionName)
+					.findOneAndUpdate(
+							Filters.eq("_id", new ObjectId(doc.getString("docId"))),new Document("$set",doc)
+							);
+		}
+	}
+
+	@Override
+	public long findAllDataCount(String attendanceManageCollect, String orgId, int orgType, String startUploadDate,String endUploadDate) {
+		try(MongoClient mc = new MongoClient(mongoHost,mongoPort)) {
+            MongoDatabase md = mc.getDatabase(mongoDatabase);
+            Bson filter = getDataFilter(orgId,orgType,startUploadDate,endUploadDate);
+            return  md.getCollection(attendanceManageCollect).count(filter);
+        }
+	}
+
+
+	@Override
+	public List<Document> findAllData(String attendanceManageCollect, String orgId, int orgType, String startUploadDate, String endUploadDate, int start, int limit) {
+		List<Document> results=new ArrayList<>();
+		try(MongoClient mc=new MongoClient(mongoHost,mongoPort)){
+			MongoDatabase md=mc.getDatabase(mongoDatabase);
+			Bson filter=getDataFilter(orgId,orgType,startUploadDate,endUploadDate);
+			FindIterable<Document> findIterable = md.getCollection(attendanceManageCollect).find(filter).skip(start).limit(limit).sort(new Document("createDate", -1));
+			findIterable.forEach((Block<? super Document>) results::add);
+			 results.stream().forEach(d-> {
+		            d.append("docId",d.getObjectId("_id").toHexString());
+		            d.remove("_id");
+		        });
+		}
+		return results;
+	}
+	
+	private Bson getDataFilter(String orgId, int orgType, String startUploadDate, String endUploadDate) {
+		Bson filters=Filters.eq("status",1);
+		filters=Filters.and(filters,Filters.in("flowState","1","2"));
+		if(StringUtils.isNotBlank(startUploadDate)) {
+			filters=Filters.and(filters,Filters.gte("createTime",startUploadDate));
+		}
+		if(StringUtils.isNotBlank(endUploadDate)) {
+			filters=Filters.and(filters,Filters.lte("createTime",endUploadDate));
+		}
+		return filters;
+	}
+}

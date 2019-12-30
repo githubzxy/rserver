@@ -1,0 +1,243 @@
+package com.enovell.yunwei.km_micor_service.action.productionManage.jobRecord;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.commons.lang.StringUtils;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.bson.Document;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+
+import com.enovell.yunwei.km_micor_service.action.technicalManagement.technicalDocument.PoiExport;
+import com.enovell.yunwei.km_micor_service.dto.GridDto;
+import com.enovell.yunwei.km_micor_service.dto.ResultMsg;
+import com.enovell.yunwei.km_micor_service.dto.productManage.JobRecordDto;
+import com.enovell.yunwei.km_micor_service.dto.productManage.MaintenanceMemorendunDto;
+import com.enovell.yunwei.km_micor_service.service.productionManage.JobRecord.JobRecordQueryService;
+import com.enovell.yunwei.km_micor_service.util.JsonUtil;
+@RestController
+@RequestMapping("/jobRecordQueryAction")
+public class JobRecordQueryAction {
+
+	@Resource(name = "JobRecordQueryService")
+	private JobRecordQueryService service;
+	@Value("${jobRecordUploadPath}")
+	private String jobRecordUploadPath;//生成文件的存放路径（用于后端写出）
+	//导入Excel
+    @PostMapping("/Import")
+    public ResultMsg wxImport(MaintenanceMemorendunDto dto,
+        @RequestParam(name = "file_excel", required = false) MultipartFile file,
+        @RequestParam(name = "userId", required = false) String userId,
+        @RequestParam(name = "orgId", required = false) String orgId,
+        @RequestParam(name = "parentId", required = false) String parentId,
+        @RequestParam(name = "userName", required = false) String userName,
+        @RequestParam(name = "orgName", required = false) String orgName,
+        @RequestParam(name = "currentDay", required = false) String currentDay,
+        HttpServletRequest request,
+        HttpServletResponse response
+    ) throws IOException {
+        try {
+            List < JobRecordDto > crdList = null;
+            crdList = service.getExcelInfo(file);
+            List<MultipartFile> multipartFiles = new ArrayList<MultipartFile>();
+            multipartFiles.add(file);
+            List < Document > files = service.uploadFile(multipartFiles);
+            service.deleteAllDocument("jobRecord", currentDay, orgId);
+            
+            SimpleDateFormat sdfFile = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+	  		Date createDatefile = new Date();
+	  		String createDateStrfile = "";
+	  		createDateStrfile = sdfFile.format(createDatefile);
+            
+            Document docfile = new Document();
+            
+            docfile.put("orgId", orgId);
+            docfile.put("parentId", parentId);
+            docfile.put("orgName", orgName);
+            docfile.put("date", currentDay);
+            docfile.put("createDate", createDateStrfile);
+            docfile.put("files", files);
+            docfile.put("filesStatus", "1");//用于标识该数据是文件相关
+            //多在数据库里存一条有文件的数据，用于领导查看-yangsy-2019-05-20
+            service.addDocument(docfile, "jobRecord");
+            
+            crdList.stream().forEach(s -> {
+            	SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    	  		Date createDate = new Date();
+    	  		String createDateStr = "";
+    	  		createDateStr = sdf.format(createDate);
+                String collectionName = "jobRecord";
+                Document document = new Document();
+//                document.put("files", files);
+//                document.put("name", s.getName());
+                document.put("orgId", orgId);
+                document.put("parentId", parentId);
+                document.put("orgName", orgName);
+                document.put("date", currentDay);
+                document.put("workArea", s.getWorkArea());
+                document.put("onlineNumber", s.getOnlineNumber());
+                document.put("project", s.getProject());
+                document.put("content", s.getContent());
+                document.put("joiner", s.getJoiner());
+                document.put("joinerNumber", s.getJoinerNumber());
+                document.put("createDate", createDateStr);
+                document.put("contentStatus", "1");//用于标识该数据是与内容相关
+//                document.put("directHour", s.getDirectHour());
+//                document.put("otherHour", s.getOtherHour());
+//                document.put("allHour", s.getAllHour());
+//                if (StringUtils.isNotBlank(s.getWorkArea())&& StringUtils.isNotBlank(s.getDate())) {
+                	  service.addDocument(document, collectionName);
+//				}
+                  
+            });
+//            response.sendRedirect("../kmms/page/jobRecordPage?userId=" + userId);
+            return ResultMsg.getSuccess("导入成功");
+        } catch (Exception e) {
+//            response.sendRedirect("../kmms/page/jobRecordPage?userId=" + userId);
+            return ResultMsg.getFailure("导入失败");
+        }
+
+    }
+    
+    @PostMapping("/findAll")
+    public GridDto < Document > findAll(@RequestParam String collectionName,
+    	String workshopType,
+    	String workshopId,
+    	String workareaId,
+        String startDate,
+        String endDate,
+        String project,
+        @RequestParam(name = "orgType", required = false) int orgType,
+        @RequestParam(name = "orgId", required = false) String orgId,
+        @RequestParam int start, @RequestParam int limit) {
+        GridDto < Document > result = new GridDto < > ();
+    	if (!service.checkData(result,startDate,endDate,project)) return result; 
+        result.setResults(service.findAllDocumentCount(collectionName,workshopType,workshopId,workareaId, startDate,endDate, project, orgId, orgType));
+        result.setRows(service.findAllDocument(collectionName,workshopType,workshopId,workareaId, startDate,endDate,project, orgId, orgType, start, limit));
+        return result;
+    }
+
+    
+    @PostMapping("/findById")
+    public ResultMsg findDocById(@RequestParam("id") String id,
+        @RequestParam("collectionName") String collectionName) {
+        Document res = service.findDocumentById(id, collectionName);
+        return ResultMsg.getSuccess("查询完成", res);
+    }
+    
+    
+    @PostMapping("/modifyDoc")
+    public ResultMsg modifyDoc(
+        @RequestParam("id") String id,
+        @RequestParam(name = "workArea") String workArea,
+        @RequestParam(name = "date") String date,
+        @RequestParam(name = "onlineNumber") String onlineNumber,
+        @RequestParam(name = "projectEdit") String project,
+        @RequestParam(name = "content") String content,
+        @RequestParam(name = "joiner") String joiner,
+        @RequestParam(name = "joinerNumber") String joinerNumber,
+        @RequestParam(name = "orgName") String orgName,
+        @RequestParam(name = "collectionName") String collectionName,
+        HttpServletRequest request) {
+        Document document = service.findDocumentById(id, collectionName);
+        document.put("workArea", workArea);
+        document.put("date", date);
+        document.put("onlineNumber", onlineNumber);
+        document.put("project", project);
+        document.put("content", content);
+        document.put("joiner", joiner);
+        document.put("joinerNumber", joinerNumber);
+        document.put("orgName", orgName);
+        Document res = service.modifyDocument(document, collectionName);
+        return ResultMsg.getSuccess("修改成功", res);
+    }
+    @PostMapping(value="ExportXls")
+   public String exportDataToClient( @RequestParam("date") String date,
+		   							@RequestParam("workShop") String workShop,
+		   							@RequestParam("workArea") String workArea,
+		   							@RequestParam("collectionName") String collectionName,
+		   							HttpServletRequest request,HttpServletResponse response) throws Exception {
+	   
+	   if (StringUtils.isNotBlank(date)&&StringUtils.isNotBlank(workShop)&&StringUtils.isNotBlank(workArea)) {
+		   Workbook workbook = service.exportExcel(date,workShop,workArea,collectionName);
+		   String outFilePath ;
+		   if (workArea.equals("所有工区")) {
+			    outFilePath = workShop+"日志记录"+date.substring(0,7)+".xls";
+		   }else {
+			   outFilePath = workArea+"日志记录"+date.substring(0,7)+".xls";
+		}
+			try {
+				FileOutputStream fos = new FileOutputStream(new File(jobRecordUploadPath+outFilePath));
+				workbook.write(fos);
+				fos.close();  
+				return jobRecordUploadPath+outFilePath;
+			} catch (FileNotFoundException e) {
+				e.printStackTrace();
+				return "error";
+			}
+	   }
+	   return "0";
+   }
+	 @PostMapping("/getWorkShop")
+	 public List<Map<String, Object>> getWorkShop(){
+		 
+		return service.getWorkShops();
+		 
+	 }
+	 @PostMapping("/getDepart")
+	 public List<Map<String, Object>> getDepart(String workShopName){
+		 
+		return service.getDeparts(workShopName);
+		 
+	 }
+	 @PostMapping("/getShopAndDepart")
+	 public List<Map<String, Object>> getShopAndDepart(@RequestParam("id") String id,
+             @RequestParam(required=false,value="curId") String curId){
+		 
+		 return service.getShopAndDepart(id, curId);
+		 
+	 }
+	 	/**
+	 	 * 
+	 	 * exportXls 导出数据
+	 	 * @param exportXlsJson
+	 	 * @param request
+	 	 * @param response
+	 	 */
+	 	@PostMapping(value = "/exportXlsBy")
+		public void exportXls(@RequestParam(name = "exportXlsJson",required = false) String exportXlsJson,
+				HttpServletRequest request,
+				HttpServletResponse response) {
+			List<JobRecordDto> dataList = new ArrayList<JobRecordDto>();
+			JobRecordDto[] dtos = JsonUtil.jsonToJavaObj(exportXlsJson, JobRecordDto[].class);
+			Collections.addAll(dataList, dtos);
+			String[] headerTableColumns = new String[]{ 
+					"日期" + "_" +"30" + "_" + "my.getDate()",
+					"填报部门" + "_" +"30" + "_" + "my.getOrgName()",
+					"项目" + "_" +"30" + "_" + "my.getProject()",
+					"具体内容" + "_" +"30" + "_" + "my.getContent()",
+					"人员姓名" + "_" +"30" + "_" + "my.getJoiner()",
+					"人数" + "_" +"30" + "_" + "my.getJoinerNumber()",
+			}; 
+			PoiExport<JobRecordDto> export = new PoiExport<JobRecordDto>();
+			export.exportXls("工作日志",headerTableColumns, new HashMap(), dataList, request, response);
+		}
+}

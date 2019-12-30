@@ -1,0 +1,241 @@
+/**
+ * 详情模块
+ */
+define('kmms/emergencyManage/floodGuardPoint/floodGuardPointManage/floodGuardPointInfo',['bui/common','common/form/FormContainer',
+	'common/uploader/ViewUploader','common/data/PostLoad'],function(r){
+	var BUI = r('bui/common'),
+		Uploader = r('common/uploader/ViewUploader'),
+		FormContainer= r('common/form/FormContainer');
+	var FloodGuardPointInfo = BUI.Overlay.Dialog.extend({
+		initializer : function(){
+			var _self = this;
+			_self.addChild(_self._initFormContainer());
+		},
+		renderUI : function(){
+			var _self = this;
+			//显示数据
+			_self._getShowData();
+		},
+		bindUI : function(){
+			var _self = this;
+			//定义按键
+			var buttons = [
+                {
+                  text:'关闭',
+                  elCls : 'button',
+                  handler : function(){
+                	  if(this.onCancel() !== false){
+				        	this.close();
+				        }
+                  }
+                }
+              ];
+			_self.set('buttons',buttons);
+		},
+		/**
+		 * 获取显示数据
+		 */
+		_getShowData : function(){
+			var _self = this,shiftId = _self.get('shiftId'),form=_self.get("formContainer");
+			$.ajax({
+				url:'/kmms/floodGuardPointAction/findById',
+          		data:{id : shiftId,collectionName:_self.get('collectionName')},
+          		type:'post',
+          		dataType:"json",
+          		success:function(res){
+					var data = res.data;
+					if(data){
+						 $("#formContainer #orgSelectName").val(data.orgSelectName);
+	            		    $('#formContainer #orgSelectId').val(data.orgSelectId);
+	            		    $('#formContainer #workArea').val(data.workArea);
+
+	            		    $("#formContainer #lineName").val(data.lineName);
+	                        $("#formContainer #section").val(data.section);
+	            		    $('#formContainer #guardName').val(data.guardName); 
+	            		    $("#formContainer #typeLT").val(data.typeLT);
+	                        $("#formContainer #countLT").val(data.countLT);
+	            		    $('#formContainer #typeYJ').val(data.typeYJ); 
+	            		    $("#formContainer #countYJ").val(data.countYJ);
+	                        $("#formContainer #typeGD").val(data.typeGD);
+	            		    $('#formContainer #condition').val(data.condition);
+	            		    $("#formContainer #phoneNum").val(data.phoneNum);
+	                        $("#formContainer #phoneAP").val(data.phoneAP);
+	            		    $('#formContainer #leadType').val(data.leadType);
+	                        $("#formContainer #leadExtent").val(data.leadExtent);
+	            		    $('#formContainer #remark').val(data.remark);
+	            		    $('#formContainer #typeGW').val(data.typeGW); 
+	            		    $("#formContainer #countGW").val(data.countGW);
+	            		    $("#formContainer #phoneNumGW").val(data.phoneNumGW);
+	                        $("#formContainer #ksStatus").val(data.ksStatus);
+
+                    }
+          		}
+			});
+		},
+		/**
+		 * 初始化FormContainer
+		 */
+		_initFormContainer : function(){
+			var _self = this;
+			var colNum = 2;
+		            var childs = [
+			{
+				label : '所属车间：',
+				itemColspan : 1,
+				item : '<input type="text" name="orgSelectName" style="width:98%" id="orgSelectName" readonly /><input type="hidden" name="orgSelectId" id="orgSelectId"  readonly/>'
+			},{
+				label : '所属工区：',
+				itemColspan : 1,
+				item : '<input type="text" name="workArea" style="width:98%" id="workArea" readonly /><input type="hidden" name="orgSelectId" id="orgSelectId"  readonly/>'
+			},{
+				label : '铁路线别：',
+				itemColspan : 1,
+				item : '<input type="text" name="lineName" id="lineName" style="width:99%" readonly/></select>'
+			},{
+			    label : '区间：',
+			    itemColspan : 1,
+			    item : '<input type="text" name="section" id="section" style="width:99%" readonly/>'
+			},{
+			    label : '看守点名称：',
+			    itemColspan : 2,
+			    item : '<input type="text" name="guardName" id="guardName" style="width:99%" readonly/>'
+			},{
+			    label : '无线设备：',
+			    itemColspan : 2,
+			    item : 
+	    	   '<table class="wxsbTable" style="width:100%;table-layout:fixed" ><tbody>'+	
+	           '<tr class="thTdPadding">'+
+		       '<th >列调便携电台</th>'+
+		       '<th style="width:20%">型号：'+
+		       '</th>'+
+		       '<td style="width:30%">'+
+			   '<input type="text" id="typeLT" name="typeLT"  style="width:98%;" readonly/>'+
+			   '</td>'+
+			   '<th style="width:20%">数量：'+
+		       '</th>'+
+			       '<td style="width:30%">'+
+				   '<input type="text" id="countLT" name="countLT"  style="width:98%;" readonly/>'+
+				   '</td>'+
+			       '</tr>'+
+			       '<tr class="thTdPadding">'+
+			       '<th >预警便携电台</th>'+
+			       '<th style="width:20%">型号：'+
+			       '</th>'+
+			       '<td style="width:30%">'+
+				   '<input type="text" id="typeYJ" name="typeYJ"  style="width:98%;" readonly/>'+
+				   '</td>'+
+				   '<th style="width:20%">数量：'+
+			       '</th>'+
+			       '<td style="width:30%">'+
+				   '<input type="text" id="countYJ" name="countYJ"  style="width:98%;" readonly/>'+
+				   '</td>'+
+			       '<tr class="thTdPadding">'+
+			       '<th >固定电台</th>'+
+			       '<th style="width:20%">型号：'+
+			       '</th>'+
+			       '<td colspan="3">'+
+				   '<input type="text" id="typeGD" name="typeGD"  style="width:98%;" readonly/>'+
+				   '</td>'+
+				   '</tr>'+
+				   '<tr class="thTdPadding">'+
+				   
+			       '<th rowspan="3">G网手持台</th>'+
+			       '<th style="width:20%" >型号：'+
+			       '</th>'+
+			       '<td style="width:30%" colspan="3">'+
+				   '<input type="text" id="typeGW" name="typeGW"  style="width:98%;" readonly/>'+
+				   '</td>'+
+				   '</tr>'+
+				   '<tr class="thTdPadding">'+
+				   '<th style="width:20%" >数量：'+
+			       '</th>'+
+			       '<td style="width:30%" colspan="3">'+
+				   '<input type="text" id="countGW" name="countGW"  style="width:98%;" readonly/>'+
+				   '</td>'+
+				   '</tr>'+
+				   '<tr class="thTdPadding">'+
+				   '<th style="width:20%" ">电话号码：'+
+			       '</th>'+
+			       '<td style="width:30%" colspan="3">'+
+				   '<input type="text" id="phoneNumGW" name="phoneNumGW" style="width:98%;" readonly/>'+
+				   '</td>'+
+			       '</tr>'+
+				   '<tr class="thTdPadding"><th style="width:20%" colspan="2">守机联控情况：'+
+			       '</th>'+
+			       '<td colspan="3">'+
+				   '<input type="text" id="condition" name="condition"  style="width:98%;" readonly/>'+
+				   '</td>'+
+				   '</tr>'+
+			       '</tbody>'+
+			       '</table>'
+			     
+		},{
+		    label : '自动电话：',
+		    itemColspan : 2,
+		    item : 
+		    	   '<table class="wxsbTable" style="width:100%;table-layout:fixed" ><tbody>'+	
+		    	   '<tr class="thTdPadding"><th style="width:33.54%" colspan="2">电话号码：'+
+			       '</th>'+
+			       '<td colspan="3">'+
+				   '<input type="text" id="phoneNum" name="phoneNum"  style="width:98%;" readonly/>'+
+				   '</td>'+
+				   '</tr>'+
+				   '<tr class="thTdPadding"><th style="width:33.54%" colspan="2">自动电话接入点：'+
+			       '</th>'+
+			       '<td colspan="3">'+
+				   '<input type="text" id="phoneAP" name="phoneAP"  style="width:98%;" readonly/>'+
+				   '</td>'+
+				   '</tr>'+
+				   '<tr class="thTdPadding"><th style="width:33.54%" colspan="2">引入线类型：'+
+			       '</th>'+
+			       '<td colspan="3">'+
+				   '<input type="text" id="leadType" name="leadType"  style="width:98%;" readonly/>'+
+				   '</td>'+
+				   '</tr>'+
+				   '<tr class="thTdPadding"><th style="width:20%" colspan="2">引入线长度：'+
+			       '</th>'+
+			       '<td colspan="3">'+
+				   '<input type="text" id="leadExtent" name="leadExtent"  style="width:98%;" readonly/>'+
+				   '</td>'+
+				   '</tr>'+
+			       '</tbody>'+
+			       '</table>'
+			     
+		},{
+		    label : '是否常年看守点：',
+		    itemColspan : 2,
+		    item : '<input type="text" name="ksStatus" id="ksStatus" style="width:99.5%;height:40px" readonly/>'
+		},{
+		    label : '备注：',
+		    itemColspan : 2,
+		    item : '<textarea name="remark" id="remark" style="width:99.5%;height:50px" readonly/></textarea>'
+		}
+            ];
+			var form = new FormContainer({
+				id : 'floodGuardPointInfoShow',
+				colNum : colNum,
+				formChildrens : childs,
+                elStyle:{overflowY:'scroll',height:'400px'}
+			});
+			_self.set('formContainer',form);
+			return form;
+		},
+		
+	},{
+		ATTRS : {
+			id : {value : 'floodGuardPointInfoDialog'},
+            previewUrl:{value:'/pageoffice/openPage?filePath='},
+            downloadUrl:{value:'/kmms/commonAction/download?path='},
+			title:{value:'详细信息'},
+            width:{value:610},
+            height:{value:500},
+            contextPath : {},
+            shiftId : {},
+            closeAction : {value:'destroy'},//关闭时销毁加载到主页面的HTML对象
+            mask : {value:true},
+			collectionName:{},
+			userId:{},
+		}
+	});
+	return FloodGuardPointInfo;
+});

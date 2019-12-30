@@ -1,0 +1,104 @@
+package com.enovell.yunwei.km_micor_service.service.technical.lineNameMangement;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Resource;
+
+import org.apache.commons.lang.StringUtils;
+import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.stereotype.Service;
+
+import com.enovell.yunwei.km_micor_service.dto.GridDto;
+import com.enovell.yunwei.km_micor_service.dto.technicalManagement.LineNameDto;
+import com.enovell.yunwei.km_micor_service.util.PagingUtil;
+
+@Service("lineNameService")
+public class LineNameMangementServiceImpl implements LineNameMangementService {
+	
+	@Resource(name = "namedParameterJdbcTemplate")
+	private NamedParameterJdbcTemplate namedJdbcTemplate;
+
+	@Override
+//	public GridDto<Object> getAllDataBySearch(String name, String desc,int start, int limit) {
+//		GridDto<Object> gd = new GridDto<Object>();
+//		List<Map<String, Object>> rows = getRows(name,desc,start,limit);
+//		Long results = getCount(name,desc);
+////		String selectSql = " SELECT "
+////				+ " 	* "
+////				+ " FROM "
+////				+ " 	RES_BASE_RAIL_LINE F ";
+////		Map<String,Object> paramMap = new HashMap<String,Object>();
+//////        paramMap.put("type", "1502");
+////		List<Map<String, Object>> workShopList=namedJdbcTemplate.query(selectSql,paramMap,new LineNameMapper());
+//		gd.setRows(rows);
+//		gd.setResults(results);
+//		return gd;
+//	}
+	public GridDto<LineNameDto> getAllDataBySearch(String name, String desc, int start, int limit) {
+		
+		String sql = "select y.* from RES_BASE_RAIL_LINE y where 1=1 ";
+		Map<String, Object> paramMap = new HashMap<String, Object>();
+		if(StringUtils.isNotBlank(name)){
+			sql += " and y.NAME_ like :name ";
+			paramMap.put("name", "%"+name.trim()+"%");
+		}
+		if(StringUtils.isNotBlank(desc)){
+			sql += " and y.DESC_ like :desc ";
+			paramMap.put("year", "%"+desc.trim()+"%");
+		}
+//		paramMap.put("start", start+1);
+//		paramMap.put("limit", start+limit);
+		List<LineNameDto> rows = namedJdbcTemplate.query(sql, paramMap, new LineNameMapper());
+		GridDto<LineNameDto> gd = new GridDto<LineNameDto>();
+		gd.setRows(PagingUtil.getPagingListData(rows, start, limit));
+		gd.setResults(Long.valueOf(rows.size()));
+		return gd;
+		
+	}
+	
+	@Override
+	public com.enovell.yunwei.km_micor_service.dto.ResultMsg addReport(String reportName, String parentId)
+			throws Exception {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public LineNameDto getDataById(String id) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public com.enovell.yunwei.km_micor_service.dto.ResultMsg update(String name, String desc) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public String deleteById(String ids) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	
+
+}
+class LineNameMapper implements RowMapper<LineNameDto> {
+
+	public LineNameDto mapRow(ResultSet rs, int idx) throws SQLException {
+		
+//		Map<String, Object> p = new HashMap<String, Object>();
+		LineNameDto ld = new LineNameDto();
+		ld.setId(rs.getString("RAIL_LINE_ID_"));
+		ld.setName(rs.getString("NAME_"));
+		ld.setDesc(rs.getString("DESC_"));
+		return ld;
+	}
+
+}
+

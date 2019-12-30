@@ -1,0 +1,124 @@
+#待办事项的service和对应模块名称、权限id、模块路径、融合模块路径
+todoCfg:
+  todoList:
+  #电路工单需要消息提醒功能
+   20181105scgl-dlgdgl-dlgdxzjsk: 
+      text: 电路工单新建(工区用户提交电路工单被技术科、车间、工区回退,用户待提交电路工单)
+      service: circuitWorkOrderApply
+      href: pageKmms/page/circuitWorkOrderApply.cn
+      rhhref : circuitWorkOrderYunwei/circuitWorkOrderDWCTX.cn
+   20181105scgl-dlgdgl-dlgdshjskkz: 
+      text: 电路工单审核(工区提交电路工单、技术科科长待审核)
+      service: circuitWorkOrderCheck
+      href: pageKmms/page/circuitWorkOrderCheck.cn
+      rhhref : 
+   20181105scgl-dlgdgl-dlgdspdld: 
+      text: 电路工单审批(提交电路工单、段领导待审批)
+      service: circuitWorkOrderApprove
+      href: pageKmms/page/circuitWorkOrderApprove.cn
+      rhhref : 
+   20181105scgl-dlgdgl-dlgdcjhf: 
+      text: 电路工单车间回复
+      service: circuitWorkOrderWorkshopReply
+      href: pageKmms/page/circuitWorkOrderWorkshopReply.cn
+      rhhref : 
+   20181105scgl-dlgdgl-dlgdgqhf: 
+      text: 电路工单工区待回复
+      service: circuitWorkOrderWorkAreaReply
+      href: pageKmms/page/circuitWorkOrderWorkAreaReply.cn
+      rhhref : 
+ #临时任务需要消息提醒功能
+   20181105scgl-lsrwtz-lsrwcj: 
+      text: 临时任务新增(被技术科、车间、工区回退，用户待提交)
+      service: taskApply
+      href: pageKmms/page/taskApply.cn
+      rhhref :     
+   20181105scgl-lsrwtz-lsrwsh: 
+      text: 临时任务审核(技术科待审核)
+      service: taskCheck
+      href: pageKmms/page/taskCheck.cn
+      rhhref :    
+   20181105scgl-lsrwtz-lsrwcjhf: 
+      text: 临时任务车间待回复
+      service: taskWorkshopReply
+      href: pageKmms/page/taskWorkshopReply.cn
+      rhhref :
+   20181105scgl-lsrwtz-lsrwgqhf: 
+      text: 临时任务工区待回复
+      service: taskWorkAreaReply
+      href: pageKmms/page/taskWorkAreaReply.cn
+      rhhref :   
+#点外维修计划
+   20181105sggl-dwwxjhgl-dwwxsq: 
+      text: 点外维修车间申请(提交点外维修被退回，用户待提交)
+      service: pointOuterMaintainApply
+      href: pageKmms/page/pointOuterMaintainApply.cn
+      rhhref :
+   20181105sggl-dwwxjhgl-dwwxsh: 
+      text: 点外维修车间审核(提交点外维修待车间审核)
+      service: pointOuterMaintainAudit
+      href: pageKmms/page/pointOuterMaintainAudit.cn
+      rhhref :
+   20181105sggl-dwwxjhgl-dwwxsp: 
+      text: 点外维修审批(提交点外维修待段调度审批)
+      service: pointOuterMaintainApprove
+      href: pageKmms/page/pointOuterMaintainApprove.cn
+      rhhref :    
+   20181105sggl-dwwxjhgl-dwwxcx: 
+      text: 点外维修待办(提交点外维修审核审批通过之后待办)
+      service: pointOuterMaintainQuery
+      href: pageKmms/page/pointOuterMaintainQuery.cn
+      rhhref :     
+#维修方案二级
+   20181105sggl-dnwxjhgl-IIjwxsq: 
+      text: 二级维修退回（被车间退回）
+      service: pointInnerSecondMaintainApply
+      href: pageKmms/page/pointInnerSecondMaintainApply.cn
+      rhhref : 
+   20181105sggl-dnwxjhgl-IIjwxsp: 
+      text: 二级维修审核（待车间审核）
+      service: pointInnerSecondMaintainApprove
+      href: pageKmms/page/pointInnerSecondMaintainApprove.cn
+      rhhref :
+#维修方案一级    
+   20181105sggl-dnwxjhgl-tcwxsq: 
+      text: 一级维修方案退回（车间提交维修方案退回）
+      service: skylightMaintenanceApply
+      href: pageKmms/page/skylightMaintenanceApply.cn
+      rhhref :
+   20181105sggl-dnwxjhgl-tcwxjsksh: 
+      text: 一级维修方案技术科待审核
+      service: skylightMaintenanceSkillAudit
+      href: pageKmms/page/skylightMaintenanceSkillAudit.cn
+      rhhref :
+   20181105sggl-dnwxjhgl-tcwxaqksh: 
+      text: 一级维修方案安全科待审核
+      service: skylightMaintenanceSafeAudit
+      href: pageKmms/page/skylightMaintenanceSafeAudit.cn
+      rhhref :
+   20181105sggl-dnwxjhgl-tcwxddksh: 
+      text: 一级维修方案调度科待审核
+      service: skylightMaintenanceDispatchAudit
+      href: pageKmms/page/skylightMaintenanceDispatchAudit.cn
+      rhhref :
+   20181105sggl-dnwxjhgl-tcwxdldsp: 
+      text: 一级维修方案段领导审批
+      service: skylightMaintenanceApprove
+      href: pageKmms/page/skylightMaintenanceApprove.cn
+      rhhref :
+#施工方案
+   20181105sggl-sgjhgl-sgjhsq: 
+      text: 施工方案申请退回或者是草稿提交
+      service: constructionApply
+      href: pageKmms/page/constructionApply.cn
+      rhhref :
+   20181105sggl-sgjhgl-sgjhsh: 
+      text: 施工方案科室审核
+      service: constructionAudit
+      href: pageKmms/page/constructionAudit.cn
+      rhhref :
+   20181105sggl-sgjhgl-sgjhsp: 
+      text: 施工方案段领导审批
+      service: constructionApproved
+      href: pageKmms/page/constructionApproved.cn
+      rhhref :
