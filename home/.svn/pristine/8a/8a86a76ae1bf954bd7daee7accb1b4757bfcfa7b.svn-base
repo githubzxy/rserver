@@ -1,0 +1,66 @@
+@CHARSET "UTF-8";
+.common-yearpicker {
+  position: absolute;
+  width: 232px !important;
+  top: 0px;
+  left: 0px;
+  background-color: #ffffff;
+  border: 1px solid #ccc;
+}
+.common-yearpicker .x-monthpicker-years ul {
+  *zoom: 1;
+}
+.common-yearpicker .x-monthpicker-years ul:before,
+.common-yearpicker .x-monthpicker-years ul:after {
+  content: " ";
+  display: table;
+}
+.common-yearpicker .x-monthpicker-years ul:after {
+  clear: both;
+}
+.common-yearpicker .x-monthpicker-years li {
+  float: left;
+  margin: 4px 0 0 4px;
+  width: 50px;
+  height: 36px;
+}
+.common-yearpicker .x-monthpicker-years li a {
+  display: block;
+  text-align: center;
+  color: #333333;
+  height: 36px;
+  line-height: 36px;
+}
+.common-yearpicker .x-monthpicker-years li a:hover {
+  background-color: #eeeeee;
+  text-decoration: none;
+}
+.common-yearpicker .x-monthpicker-years .x-monthpicker-item-selected a {
+  color: #ffffff;
+  background-color: #3276b1;
+}
+.common-yearpicker .x-monthpicker-years .x-monthpicker-item-selected a:hover {
+  background-color: #3276b1;
+}
+.common-yearpicker .x-monthpicker-years .x-monthpicker-yearnav {
+  padding: 14px 0 0px 0;
+  height: 26px;
+}
+.common-yearpicker .x-monthpicker-years .x-monthpicker-yearnav .x-icon {
+  margin: 0px 40px 0px 50px;
+  cursor: pointer;
+}
+.common-yearpicker .x-monthpicker-years .x-monthpicker-yearnav .x-icon .icon {
+  margin-top: 2px;
+}
+.common-yearpicker .x-monthpicker-years ul {
+  *padding-bottom: 4px;
+}
+.common-yearpicker .x-monthpicker-footer {
+  padding: 6px 0 4px;
+  border-top: 1px solid #ccc;
+  text-align: center;
+}
+.common-yearpicker .x-monthpicker-footer .bui-bar-item-button {
+  margin-right: 5px;
+}

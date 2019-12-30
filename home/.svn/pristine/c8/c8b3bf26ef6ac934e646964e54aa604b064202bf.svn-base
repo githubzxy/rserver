@@ -1,0 +1,62 @@
+#app config
+spring.application.name=home
+server.port=7000
+
+spring.http.multipart.enabled=true
+# Single file max size  
+spring.http.multipart.maxFileSize=500Mb
+# All files max size  
+spring.http.multipart.maxRequestSize=500Mb
+
+#close hystrix timeout \u5173\u95ED\u878D\u65AD\u4FDD\u62A4 \u4EE5\u514D\u9996\u6B21\u8BBF\u95EE\u8D85\u65F6\u5F02\u5E38
+hystrix.command.default.execution.timeout.enabled=false
+server.connection-timeout=10000
+
+server.compression.enabled=true
+server.compression.mime-types=application/json,text/html,text/plain,application/javascript,text/css
+
+# REGISTE SERVICE TO EUREKA
+#eureka.client.serviceUrl.defaultZone=http://192.168.0.103:1111/eureka/
+eureka.client.serviceUrl.defaultZone=http://localhost:1111/eureka/
+eureka.instance.preferIpAddress=true
+eureka.instance.instanceId=${spring.cloud.client.ipAddress}:${server.port}
+#redis and session config
+#spring.redis.host=192.168.0.92
+#spring.redis.port=6379
+#spring.session.store-type=redis
+# SPRING PAGE TEMPLATE THYMELEAF CONFIG
+spring.thymeleaf.mode=HTML5
+spring.thymeleaf.encoding=UTF-8
+spring.thymeleaf.content-type=text/html
+spring.thymeleaf.cache=false
+
+#tomcat connection 
+server.tomcat.accept-count=50
+server.tomcat.max-threads=50
+server.tomcat.max-connections=100
+
+#zuul thread pool cfg
+zuul.host.max-per-route-connections=50
+zuul.host.max-total-connections=50
+zuul.max.host.connections=50
+zuul.host.socket-timeout-millis=60000
+zuul.host.connect-timeout-millis=60000
+zuul.add-host-header=true
+
+#ribbon time out 
+ribbon.ReadTimeout=60000
+ribbon.ConnectTimeout=60000
+
+# DATASOURCE (DataSourceAutoConfiguration & DataSourceProperties)
+spring.datasource.name=datasource
+spring.datasource.driverClassName=oracle.jdbc.OracleDriver
+#spring.datasource.username=kuntie_hutie_rinms2018
+#spring.datasource.password=kuntie_hutie_rinms2018
+spring.datasource.username=rinms2
+spring.datasource.password=rinms2
+spring.datasource.url=jdbc:oracle:thin:@10.206.97.14:2333:orcl
+#spring.datasource.url=jdbc:oracle:thin:@192.168.0.216:1521:orcl
+spring.datasource.max-active=15
+spring.datasource.max-idle=15
+spring.datasource.min-idle=5
+spring.datasource.initial-size=5

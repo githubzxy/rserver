@@ -1,0 +1,46 @@
+.bui-queue-item-del{
+	color: blue;
+	padding: 3px 2px;
+	display: inline-block;
+}
+.bui-queen-item-download{
+	color: blue;
+	padding: 3px 2px;
+	display: inline-block;
+}
+.bui-queen-item-edit{
+	color: blue;
+	padding: 3px 2px;
+	display: inline-block;
+}
+.bui-queue .bui-queue-item{
+	border:none;
+	padding-top: 5px;
+	padding-bottom: 5px;
+}
+.bui-queue .bui-queue-item:nth-child(even){
+	background-color: #f0f0f0;
+}
+
+.defaultTheme .bui-queue-item .action {
+    display: block;
+    position: absolute;
+    padding-left: 10px;
+    width: 100px;
+    top: 0px;
+    right: 0px;
+}
+
+.defaultTheme .bui-queue-item .action .bui-queen-item-download {
+    cursor: pointer;
+}
+.defaultTheme .bui-queue-item .action .bui-queen-item-download:hover {
+    color: #fd7316;
+}
+
+.defaultTheme .bui-queue-item .action .bui-queen-item-edit{
+    cursor: pointer;
+}
+.defaultTheme .bui-queue-item .action .bui-queen-item-edit:hover {
+    color: #fd7316;
+}

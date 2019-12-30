@@ -1,0 +1,53 @@
+#app config
+spring.application.name=home
+server.port=8000
+
+spring.http.multipart.enabled=true
+# Single file max size  
+spring.http.multipart.maxFileSize=500Mb
+# All files max size  
+spring.http.multipart.maxRequestSize=500Mb
+
+#close hystrix timeout \u5173\u95ED\u878D\u65AD\u4FDD\u62A4 \u4EE5\u514D\u9996\u6B21\u8BBF\u95EE\u8D85\u65F6\u5F02\u5E38
+hystrix.command.default.execution.timeout.enabled=false
+server.connection-timeout=10000
+
+server.compression.enabled=true
+server.compression.mime-types=application/json,text/html,text/plain,application/javascript,text/css
+
+# BIND SERVER IP ADDRESSS
+server.address=10.160.94.88
+# REGISTE SERVICE TO EUREKA
+eureka.instance.preferIpAddress=true
+eureka.client.serviceUrl.defaultZone=http://10.30.10.226:1111/eureka/
+#redis and session config
+spring.redis.host=localhost
+spring.redis.port=6379
+spring.session.store-type=redis
+
+#tomcat connection 
+server.tomcat.accept-count=1000
+server.tomcat.max-threads=1000
+server.tomcat.max-connections=2000
+
+#zuul thread pool cfg
+zuul.host.max-per-route-connections=1000
+zuul.host.max-total-connections=2000
+zuul.max.host.connections=1000
+zuul.host.socket-timeout-millis=60000
+zuul.host.connect-timeout-millis=60000
+
+#ribbon time out 
+ribbon.ReadTimeout=60000
+ribbon.ConnectTimeout=60000
+
+# DATASOURCE (DataSourceAutoConfiguration & DataSourceProperties)
+spring.datasource.name=datasource
+spring.datasource.driverClassName=oracle.jdbc.OracleDriver
+spring.datasource.url=jdbc:oracle:thin:@10.160.94.88:1521:orcl
+spring.datasource.username=rinms2
+spring.datasource.password=rinms2
+spring.datasource.max-active=15
+spring.datasource.max-idle=15
+spring.datasource.min-idle=5
+spring.datasource.initial-size=5
